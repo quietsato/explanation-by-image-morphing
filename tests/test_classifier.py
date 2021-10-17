@@ -15,9 +15,9 @@ class ClassifierTest(unittest.TestCase):
             self.image_size,
             self.image_channels,
             self.num_classes,
-            conv_out_channels=[4, 8],
-            conv_kernel_size=[4, 4],
-            pool_kernel_size=[2, 2]
+            conv_out_channels=[4, 8, 8],
+            conv_kernel_size=[4, 4, 3],
+            pool_kernel_size=[1, 2, 2]
         )
 
         x = torch.zeros([
