@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from typing import List
 
+
 class Classifier(nn.Module):
     def __init__(self,
                  image_size: int,
@@ -12,6 +13,10 @@ class Classifier(nn.Module):
                  pool_kernel_size: List[int]):
 
         super().__init__()
+
+        self.image_size = image_size
+        self.image_channels = image_channels
+        self.num_classes = num_classes
 
         self.model = nn.Sequential()
 
@@ -26,7 +31,7 @@ class Classifier(nn.Module):
             pk = pool_kernel_size[i]
             image_size //= pk
 
-            self.model.add_module(f"conv2d_{i+1}", nn.Conv2d(c_in, c_out, ck, padding='same'))
+            self.model.add_module(f"conv2d_{i+1}", nn.Conv2d(c_in, c_out, ck, padding=ck//2))
             self.model.add_module(f"relu_{i+1}", nn.ReLU())
             self.model.add_module(f"maxpool2d_{i+1}", nn.MaxPool2d(pk))
 
@@ -38,3 +43,14 @@ class Classifier(nn.Module):
 
     def forward(self, x) -> torch.Tensor:
         return self.model(x)
+
+    def export(self, export_path: str, export_params=True, verbose=True):
+        x = torch.randn(1, self.image_channels,
+                        self.image_size, self.image_size)
+        torch.onnx.export(
+            self,
+            x,
+            export_path,
+            export_params=export_params,
+            verbose=verbose
+        )
