@@ -49,11 +49,7 @@ class ID_CVAETest(unittest.TestCase):
             self.batch_size,
             self.latent_dim
         ])
-
-        y = torch.zeros([
-            self.batch_size,
-            self.num_classes
-        ])
+        y = torch.zeros([self.batch_size], dtype=torch.long)
 
         x: Tensor = D(z, y)
 

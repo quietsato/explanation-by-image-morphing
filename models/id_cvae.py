@@ -22,7 +22,8 @@ class Encoder(torch.nn.Module):
             ck = conv_kernel_size[i]
             cs = conv_stride[i]
             image_size //= cs
-            self.seq.add_module(f"conv2d_{i+1}", nn.Conv2d(c_in, c_out, ck, cs, padding=(ck-1)//2))
+            self.seq.add_module(f"conv2d_{i+1}",
+                                nn.Conv2d(c_in, c_out, ck, cs, padding=(ck - cs + 1)//2))
             self.seq.add_module(f"relu", nn.ReLU())
         linear_in = image_size * image_size * conv_out_channels[n-1]
         self.seq.add_module(f"flatten", nn.Flatten())
@@ -52,6 +53,7 @@ class Decoder(torch.nn.Module):
                  conv_t_kernel_size: List[int],
                  conv_t_stride: List[int]):
         super().__init__()
+        self.num_classes = num_classes
 
         n = min(len(conv_t_in_channels), len(conv_t_kernel_size), len(conv_t_stride))
 
@@ -72,14 +74,16 @@ class Decoder(torch.nn.Module):
             cs = conv_t_stride[i]
             self.seq.add_module(f"conv_t_{i+1}",
                                 nn.ConvTranspose2d(c_in, c_out, ck, cs,
-                                                   padding=ceil(ck-cs+1)//2, output_padding=(ck-cs) % 2))
+                                                   padding=ceil(ck-cs+1)//2,
+                                                   output_padding=(ck-cs) % 2))
             if i < n - 1:
-                self.seq.add_module(f"relu_{i+1}", nn.ReLU())
+                self.seq.add_module(f"relu", nn.ReLU())
             else:
                 self.seq.add_module(f"sigmoid", nn.Sigmoid())
 
     def forward(self, z: Tensor, y: Tensor):
-        zy = torch.cat([z, y], 1)
+        y_onehot = torch.eye(self.num_classes, dtype=torch.float32)[y]
+        zy = torch.cat([z, y_onehot], 1)
         f: Tensor = self.W_start(zy)
         f = f.reshape([len(f),
                        self.image_channels_start,
@@ -124,11 +128,11 @@ class ID_CVAE(torch.nn.Module):
 
     def encode(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         return self.E(x)
-    
+
     def decode(self, z: Tensor, y: Tensor) -> Tensor:
         return self.D(z, y)
 
     def forward(self, x: Tensor, y: Tensor):
-        z: Tensor = self.E(x)[0]
+        z, _, _ = self.E(x)
         x_ = self.D(z, y)
         return x_
