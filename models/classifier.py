@@ -44,3 +44,14 @@ class Classifier(nn.Module):
     def forward(self, x) -> torch.Tensor:
         return self.model(x)
 
+
+def build_classifier(dataset: str = "mnist") -> Classifier:
+    if dataset.lower() == "mnist":
+        return Classifier(
+            28,
+            1,
+            10,
+            conv_out_channels=[32, 64],
+            conv_kernel_size=[3, 3],
+            pool_kernel_size=[2, 2]
+        )

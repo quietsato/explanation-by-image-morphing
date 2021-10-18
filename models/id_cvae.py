@@ -136,3 +136,19 @@ class ID_CVAE(torch.nn.Module):
         z, _, _ = self.E(x)
         x_ = self.D(z, y)
         return x_
+
+
+def build_id_cvae(dataset: str = "mnist") -> ID_CVAE:
+    if dataset.lower() == "mnist":
+        return ID_CVAE(
+            28,
+            1,
+            16,
+            10,
+            conv_out_channels=[32, 64],
+            conv_kernel_size=[4, 4],
+            conv_stride=[2, 2],
+            conv_t_in_channels=[64, 64, 32],
+            conv_t_kernel_size=[4, 4, 3],
+            conv_t_stride=[2, 2, 1]
+        )
