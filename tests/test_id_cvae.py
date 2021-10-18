@@ -38,10 +38,11 @@ class ID_CVAETest(unittest.TestCase):
         D = Decoder(
             self.image_size,
             self.image_channels,
+            self.latent_dim,
             self.num_classes,
-            conv_out_channels=[4, 8, 8],
-            conv_kernel_size=[4, 4, 4],
-            pool_kernel_size=[1, 2, 2]
+            conv_t_in_channels=[8, 4, 4],
+            conv_t_kernel_size=[4, 3, 3],
+            conv_t_stride=[2, 2, 1]
         )
 
         z = torch.zeros([
@@ -49,9 +50,15 @@ class ID_CVAETest(unittest.TestCase):
             self.latent_dim
         ])
 
-        x: Tensor = D(z)
+        y = torch.zeros([
+            self.batch_size,
+            self.num_classes
+        ])
 
-        self.assertEqual(list(x.shape), [self.batch_size, self.num_classes])
+        x: Tensor = D(z, y)
+
+        self.assertEqual(list(x.shape),
+                         [self.batch_size, self.image_channels, self.image_size, self.image_size])
 
 
 if __name__ == "__main__":

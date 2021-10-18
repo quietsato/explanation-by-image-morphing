@@ -1,6 +1,7 @@
 from typing import List
 import torch
 from torch import Tensor, nn
+from math import ceil
 
 
 class Encoder(torch.nn.Module):
@@ -42,11 +43,51 @@ class Encoder(torch.nn.Module):
 
 
 class Decoder(torch.nn.Module):
-    def __init__(self):
+    def __init__(self,
+                 image_size: int,
+                 image_channels: int,
+                 latent_dim: int,
+                 num_classes: int,
+                 conv_t_in_channels: List[int],
+                 conv_t_kernel_size: List[int],
+                 conv_t_stride: List[int]):
         super().__init__()
 
+        n = min(len(conv_t_in_channels), len(conv_t_kernel_size), len(conv_t_stride))
+
+        self.image_channels_start = conv_t_in_channels[0]
+        self.image_size_start = image_size
+        for s in conv_t_stride:
+            self.image_size_start //= s
+
+        linear_out = self.image_size_start * self.image_size_start * conv_t_in_channels[0]
+        self.W_start = nn.Linear(latent_dim + num_classes, linear_out)
+
+
+        self.seq = nn.Sequential()
+        image_size = self.image_size_start
+        for i in range(n):
+            c_in = conv_t_in_channels[i]
+            c_out = conv_t_in_channels[i+1] if i < n - 1 else image_channels
+            ck = conv_t_kernel_size[i]
+            cs = conv_t_stride[i]
+            self.seq.add_module(f"conv_t_{i+1}",
+                                nn.ConvTranspose2d(c_in, c_out, ck, cs,
+                                                   padding=ceil(ck-cs+1)//2, output_padding=(ck-cs)%2))
+            if i < n - 1:
+                self.seq.add_module(f"relu_{i+1}", nn.ReLU())
+            else:
+                self.seq.add_module(f"sigmoid", nn.Sigmoid())
+
     def forward(self, z: Tensor, y: Tensor):
-        pass
+        zy = torch.cat([z, y], 1)
+        f: Tensor = self.W_start(zy)
+        f = f.reshape([len(f),
+                       self.image_channels_start,
+                       self.image_size_start,
+                       self.image_size_start])
+        x = self.seq(f)
+        return x
 
 
 class ID_CVAE(torch.nn.Module):
