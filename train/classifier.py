@@ -4,13 +4,12 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 from torchvision.datasets.mnist import MNIST
 
-import matplotlib.pyplot as plt
 import os
 
 torch.manual_seed(42)
 
-LOG_DIR = os.path.join(os.path.dirname(__file__), "../log")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "../out")
+LOG_DIR = os.path.join(os.path.dirname(__file__), "../log/C")
+OUT_DIR = os.path.join(os.path.dirname(__file__), "../out/C")
 
 restore_weights = False
 save_weights_per_epoch = 2
@@ -30,7 +29,7 @@ def main():
     # Logging
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
-    log_path = os.path.join(LOG_DIR, f"{get_time_str()}_C_train.csv")
+    log_path = os.path.join(LOG_DIR, f"{get_time_str()}_train.csv")
     csv_logger = CsvLogger(log_path, ['epoch', 'train_loss', 'val_loss', 'val_acc', 'time'])
 
     # Datasets
@@ -60,12 +59,7 @@ def main():
     test_dataloader = DataLoader(test_dataset, batch_size=128,
                                  shuffle=False, num_workers=os.cpu_count())
 
-    C = Classifier(image_size,
-                   image_channels,
-                   num_classes,
-                   conv_out_channels=[32, 64],
-                   conv_kernel_size=[3, 3],
-                   pool_kernel_size=[2, 2]).to(device)
+    C = build_classifier().to(device)
 
     print(C)
 
@@ -74,9 +68,8 @@ def main():
     opt = optim.Adam(C.parameters(), lr=1e-3)
 
     # Create a directory to save state dict
-    C_state_dict_dir = os.path.join(OUT_DIR, "C")
-    if not os.path.exists(C_state_dict_dir):
-        os.makedirs(C_state_dict_dir)
+    if not os.path.exists(OUT_DIR):
+        os.makedirs(OUT_DIR)
 
     # Training
     C.train(True)
@@ -117,15 +110,24 @@ def main():
         csv_logger.log([epoch, train_loss, val_loss, val_acc, get_time_str()])
 
         if save_weights_per_epoch > 0 and epoch % save_weights_per_epoch == 0:
-            torch.save(C.state_dict(), os.path.join(C_state_dict_dir, f"C_{epoch:03}_state_dict"))
+            torch.save(C.state_dict(), os.path.join(OUT_DIR, f"{epoch:03}_state_dict"))
 
     C.train(False)
+
+    # Evaluate Model
+    acc_count = 0
+    for (batch_x, batch_y) in test_dataloader:
+        y = C(batch_x)
+        is_correct = y.argmax(1) == batch_y
+        acc_count += is_correct.int().sum().item()
+    test_acc = acc_count / len(test_dataset)
+    print(f"Test accuracy: {test_acc:.6f}")
 
 
 if __name__ == "__main__":
     import sys
     sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-    from models.classifier import Classifier
-    from utils.csv_logger import get_time_str, CsvLogger
+    from models.classifier import build_classifier
+    from utils.logger import get_time_str, CsvLogger
 
     main()
