@@ -44,13 +44,3 @@ class Classifier(nn.Module):
     def forward(self, x) -> torch.Tensor:
         return self.model(x)
 
-    def export(self, export_path: str, export_params=True, verbose=True):
-        x = torch.randn(1, self.image_channels,
-                        self.image_size, self.image_size)
-        torch.onnx.export(
-            self,
-            x,
-            export_path,
-            export_params=export_params,
-            verbose=verbose
-        )
