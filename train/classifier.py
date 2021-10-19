@@ -2,6 +2,8 @@ import tensorflow as tf
 from tensorflow.keras import datasets, optimizers, callbacks, Model, losses
 import os
 
+tf.random.set_seed(42)
+
 epochs = 3
 batch_size = 256
 
