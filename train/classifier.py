@@ -1,133 +1,62 @@
-import torch
-from torch import Tensor, nn, optim
-from torch.utils.data import DataLoader, random_split
-from torchvision import datasets, transforms
-from torchvision.datasets.mnist import MNIST
-
+import tensorflow as tf
+from tensorflow.keras import datasets, optimizers, callbacks, Model, losses
 import os
 
-torch.manual_seed(42)
-
-LOG_DIR = os.path.join(os.path.dirname(__file__), "../log/C")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "../out/C")
-
-restore_weights = False
-save_weights_per_epoch = 2
-
-image_size = 28
-image_channels = 1
-num_classes = 10
-
-validation_split = .2
-training_epochs = 10
-
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+epochs = 3
+batch_size = 256
 
 def main():
-    # Logging
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
-    log_path = os.path.join(LOG_DIR, f"{get_time_str()}_train.csv")
-    csv_logger = CsvLogger(log_path, ['epoch', 'train_loss', 'val_loss', 'val_acc', 'time'])
+    time_str = get_time_str()
+    (train_images, train_labels), _ = datasets.mnist.load_data()
+    train_images = preprocess_image(train_images)
+    train_labels = tf.one_hot(train_labels, num_classes)
 
-    # Datasets
-    train_val_dataset: MNIST = datasets.MNIST(
-        root=os.path.join(os.path.dirname(__file__), '..', 'data'),
-        train=True,
-        transform=transforms.ToTensor(),
-        download=True,
-    )
-    len_validation_dataset = int(len(train_val_dataset) * validation_split)
-    len_train_dataset = len(train_val_dataset) - len_validation_dataset
-    train_dataset, validation_dataset = random_split(train_val_dataset,
-                                                     [len_train_dataset, len_validation_dataset])
 
-    test_dataset: MNIST = datasets.MNIST(
-        root=os.path.join(os.path.dirname(__file__), '..', 'data'),
-        train=False,
-        transform=transforms.ToTensor(),
-        download=True,
+    C: Model = build_classifier()
+    C.compile(
+        optimizer=optimizers.Adam(learning_rate=1e-3),
+        loss=losses.CategoricalCrossentropy(from_logits=False),
+        metrics=['acc']
     )
 
-    # Dataloaders
-    train_dataloader = DataLoader(train_dataset, batch_size=128,
-                                  shuffle=True, num_workers=os.cpu_count())
-    validation_dataloader = DataLoader(validation_dataset, batch_size=128,
-                                       shuffle=False, num_workers=os.cpu_count())
-    test_dataloader = DataLoader(test_dataset, batch_size=128,
-                                 shuffle=False, num_workers=os.cpu_count())
+    # Callbacks
+    csv_logger = callbacks.CSVLogger(
+        os.path.join(LOG_DIR, "C", f"{time_str}.csv")
+    )
+    early_stopping = callbacks.EarlyStopping(
+        monitor='val_loss',
+        patience=3
+    )
+    model_checkpoint = callbacks.ModelCheckpoint(
+        os.path.join(OUT_DIR,
+                     "C",
+                     time_str + "_weights_{epoch:03d}_{loss:02.3f}_{acc:02.3f}_{val_loss:02.3f}_{val_acc:02.3f}.hdf5"),
+        monitor='val_loss',
+        save_weights_only=True,
+    )
 
-    C = build_classifier().to(device)
+    # Train
+    C.fit(
+        train_images,
+        train_labels,
+        batch_size=batch_size,
+        epochs=epochs,
+        shuffle=True,
+        validation_split=.2,
+        callbacks=[csv_logger, early_stopping, model_checkpoint]
+    )
 
-    print(C)
-
-    # Loss & Optimiser
-    loss = nn.CrossEntropyLoss()
-    opt = optim.Adam(C.parameters(), lr=1e-3)
-
-    # Create a directory to save state dict
-    if not os.path.exists(OUT_DIR):
-        os.makedirs(OUT_DIR)
-
-    # Training
-    C.train(True)
-    for epoch in range(1, training_epochs+1):
-        print(f"[Epoch {epoch:03}]")
-
-        train_loss = 0
-        for (batch_x, batch_y) in train_dataloader:
-            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-
-            opt.zero_grad()
-
-            y: Tensor = C(batch_x)
-            batch_loss = loss(y, batch_y)
-            batch_loss.backward()
-            opt.step()
-
-            train_loss += batch_loss.item()
-        
-        train_loss /= len(train_dataloader)
-
-        # Validate model
-        val_loss = 0
-        correct_count = 0
-        with torch.no_grad():
-            for (val_x, val_y) in validation_dataloader:
-                val_x, val_y = val_x.to(device), val_y.to(device)
-
-                y = C(val_x)
-                val_loss += loss(y, val_y).item()
-                is_correct: Tensor = y.argmax(1) == val_y
-                correct_count += is_correct.int().sum().item()
-        
-        val_loss /= len(validation_dataloader)
-        val_acc = correct_count / len(validation_dataset)
-
-        print(f"train_loss: {train_loss:3.6f}, val_loss: {val_loss:3.6f}, val_acc: {val_acc:.6f}")
-        csv_logger.log([epoch, train_loss, val_loss, val_acc, get_time_str()])
-
-        if save_weights_per_epoch > 0 and epoch % save_weights_per_epoch == 0:
-            torch.save(C.state_dict(), os.path.join(OUT_DIR, f"{epoch:03}_state_dict"))
-
-    C.train(False)
-
-    # Evaluate Model
-    acc_count = 0
-    for (batch_x, batch_y) in test_dataloader:
-        y = C(batch_x)
-        is_correct = y.argmax(1) == batch_y
-        acc_count += is_correct.int().sum().item()
-    test_acc = acc_count / len(test_dataset)
-    print(f"Test accuracy: {test_acc:.6f}")
+    C.save_weights(
+        os.path.join(OUT_DIR, "C", f"{time_str}_complete")
+    )
 
 
 if __name__ == "__main__":
     import sys
     sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-    from models.classifier import build_classifier
-    from utils.logger import get_time_str, CsvLogger
+
+    from config import *
+    from models import build_classifier
+    from util import get_time_str, preprocess_image
 
     main()
