@@ -1,12 +1,12 @@
 from typing import Tuple
 import tensorflow as tf
-from tensorflow.keras import layers, Model, Input
+from tensorflow.keras import layers, metrics, losses, Model, Input, Sequential
 
 from config import *
 
 
-def build_classifier() -> tf.keras.Model:
-    return tf.keras.Sequential(layers=[
+def build_classifier() -> Model:
+    return Sequential(layers=[
         layers.Input(shape=(image_size, image_size, image_channels)),
         layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
         layers.MaxPooling2D(pool_size=(2, 2)),
@@ -25,9 +25,9 @@ class IDCVAE(Model):
         self.E = build_encoder()
         self.D = build_decoder()
 
-        self.total_loss_tracker = tf.keras.metrics.Mean(name="total_loss")
-        self.rec_loss_tracker = tf.keras.metrics.Mean(name="reconstruction_loss")
-        self.kl_loss_tracker = tf.keras.metrics.Mean(name="kl_loss")
+        self.total_loss_tracker = metrics.Mean(name="total_loss")
+        self.rec_loss_tracker = metrics.Mean(name="reconstruction_loss")
+        self.kl_loss_tracker = metrics.Mean(name="kl_loss")
 
     @property
     def metrics(self):
@@ -69,7 +69,7 @@ class IDCVAE(Model):
         }
 
 
-class Sampling(tf.keras.layers.Layer):
+class Sampling(layers.Layer):
     def call(self, inputs):
         z_mean, z_log_var = inputs
         batch = tf.shape(z_mean)[0]
@@ -91,18 +91,18 @@ def build_encoder() -> Model:
 
 
 def build_decoder() -> Model:
-    return tf.keras.Sequential(layers=[
-            tf.keras.layers.InputLayer((latent_dim + num_classes, )),
-            tf.keras.layers.Dense(7 * 7 * 64),
-            tf.keras.layers.Reshape((7, 7, 64)),
-            tf.keras.layers.Conv2DTranspose(64, 3, strides=2, padding='same', activation='relu'),
-            tf.keras.layers.Conv2DTranspose(32, 3, strides=2, padding='same', activation='relu'),
-            tf.keras.layers.Conv2DTranspose( 1, 3, strides=1, padding='same', activation='sigmoid')
+    return Sequential(layers=[
+            layers.InputLayer((latent_dim + num_classes, )),
+            layers.Dense(7 * 7 * 64),
+            layers.Reshape((7, 7, 64)),
+            layers.Conv2DTranspose(64, 3, strides=2, padding='same', activation='relu'),
+            layers.Conv2DTranspose(32, 3, strides=2, padding='same', activation='relu'),
+            layers.Conv2DTranspose( 1, 3, strides=1, padding='same', activation='sigmoid')
         ], name="D")
 
 def reconstruction_loss(x, rec):
     return tf.reduce_mean(tf.reduce_sum(
-        tf.keras.losses.binary_crossentropy(x, rec), axis=(1, 2)
+        losses.binary_crossentropy(x, rec), axis=(1, 2)
     ))
 def KL_loss(z_mean, z_log_var):
     return tf.reduce_mean(tf.reduce_sum(
