@@ -5,12 +5,15 @@ import os
 epochs = 3
 batch_size = 256
 
+
 def main():
+    LOG_DIR = create_log_dir("C")
+    OUT_DIR = create_out_dir("C")
+
     time_str = get_time_str()
     (train_images, train_labels), _ = datasets.mnist.load_data()
     train_images = preprocess_image(train_images)
     train_labels = tf.one_hot(train_labels, num_classes)
-
 
     C: Model = build_classifier()
     C.compile(
@@ -21,7 +24,7 @@ def main():
 
     # Callbacks
     csv_logger = callbacks.CSVLogger(
-        os.path.join(LOG_DIR, "C", f"{time_str}.csv")
+        os.path.join(LOG_DIR, f"{time_str}.csv")
     )
     early_stopping = callbacks.EarlyStopping(
         monitor='val_loss',
@@ -29,7 +32,6 @@ def main():
     )
     model_checkpoint = callbacks.ModelCheckpoint(
         os.path.join(OUT_DIR,
-                     "C",
                      time_str + "_weights_{epoch:03d}_{loss:02.3f}_{acc:02.3f}_{val_loss:02.3f}_{val_acc:02.3f}.hdf5"),
         monitor='val_loss',
         save_weights_only=True,
@@ -46,10 +48,6 @@ def main():
         callbacks=[csv_logger, early_stopping, model_checkpoint]
     )
 
-    C.save_weights(
-        os.path.join(OUT_DIR, "C", f"{time_str}_complete")
-    )
-
 
 if __name__ == "__main__":
     import sys
@@ -57,6 +55,6 @@ if __name__ == "__main__":
 
     from config import *
     from models import build_classifier
-    from util import get_time_str, preprocess_image
+    from util import get_time_str, preprocess_image, create_log_dir, create_out_dir
 
     main()
