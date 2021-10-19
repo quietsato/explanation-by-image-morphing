@@ -16,12 +16,15 @@ def preprocess_image(image: np.ndarray):
 
 
 def create_log_dir(name: str) -> str:
-    log_dir = os.path.join(LOG_BASE_DIR, name)
-    os.makedirs(log_dir)
-    return log_dir
+    return _create_dir(LOG_BASE_DIR, name)
 
 
 def create_out_dir(name: str) -> str:
-    out_dir = os.path.join(OUT_BASE_DIR, name)
-    os.makedirs(out_dir)
-    return out_dir
+    return _create_dir(OUT_BASE_DIR, name)
+
+
+def _create_dir(base: str, name: str):
+    target_dir = os.path.join(base, name)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+    return target_dir
