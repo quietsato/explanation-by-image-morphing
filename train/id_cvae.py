@@ -31,7 +31,7 @@ def main():
     )
     model_checkpoint = callbacks.ModelCheckpoint(
         os.path.join(OUT_DIR,
-                     time_str + "_weights_{epoch:03d}_{loss:04.3f}_{reconstruction_loss:04.3f}_{kl_loss:03.3f}.hdf5"),
+                     time_str + "_weights_{epoch:03d}_{loss:04.3f}_{reconstruction_loss:04.3f}_{kl_loss:03.3f}.h5"),
         monitor='loss',
         save_weights_only=True,
     )
