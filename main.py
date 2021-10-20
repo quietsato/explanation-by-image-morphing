@@ -1,68 +1,69 @@
-import torch
-from torch._C import dtype
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from torchvision.transforms import ToTensor
-from torchvision.datasets.mnist import MNIST
-
-from utils.logger import get_time_str
-from models.classifier import build_classifier
-from models.id_cvae import build_id_cvae
+import tensorflow as tf
+from tensorflow.keras import datasets, optimizers
 
 import matplotlib.pyplot as plt
 import imageio
 import os
 
 
-C_STATE_DICT_EPOCH = 10
-VAE_STATE_DICT_EPOCH = 4
+tf.random.set_seed(42)
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "out")
-SCRIPT_OUT_DIR = os.path.join(OUT_DIR, "main")
+
+C_WEIGHT_PATH = None
+# C_WEIGHT_PATH = os.path.join(os.path.dirname(__file__), "/out/C/checkpoint")
+VAE_WEIGHT_PATH = os.path.join(os.path.dirname(__file__), "out/VAE/CVAE.h5")
+
+
 
 
 def main():
-    if not os.path.exists(SCRIPT_OUT_DIR):
-        os.makedirs(SCRIPT_OUT_DIR)
-
-    C = build_classifier("mnist")
-    VAE = build_id_cvae("mnist")
-    for param in C.parameters():
-        param.requires_grad = False
-    for param in VAE.parameters():
-        param.requires_grad = False
-
-    c_state_dict_path = os.path.join(OUT_DIR, "C", f"{C_STATE_DICT_EPOCH:03}_state_dict")
-    vae_state_dict_path = os.path.join(OUT_DIR, "VAE", f"{VAE_STATE_DICT_EPOCH:03}_state_dict")
-
-    C.load_state_dict(torch.load(c_state_dict_path))
-    VAE.load_state_dict(torch.load(vae_state_dict_path))
-
-    test_dataset = MNIST(DATA_DIR, train=False, transform=ToTensor(), download=True)
-    dataset = list(test_dataset)
-
-    encode_decode_test(dataset[:10], VAE)
+    time_str = get_time_str()
+    OUT_DIR = create_out_dir("main")
 
 
-def encode_decode_test(dataset, VAE):
-    n = len(dataset)
+    _, (test_images, test_labels) = datasets.mnist.load_data()
+    test_images = preprocess_image(test_images)
+
+    classifier = build_classifier()
+    
+    vae = IDCVAE()
+    vae.call(test_images[0:1], test_labels[0:1])
+    vae.compile()
+
+    if C_WEIGHT_PATH is not None:
+        C.load_weights(C_WEIGHT_PATH)
+
+    if VAE_WEIGHT_PATH is not None:
+        vae.load_weights(VAE_WEIGHT_PATH)
+
+
+    encode_decode_test(test_images[:10], test_labels[:10], vae, OUT_DIR, time_str)
+
+
+def encode_decode_test(xs, ys, vae, OUT_DIR: str, time_str: str):
+    n = min(len(xs), len(ys))
+    zs,_,_ = vae.encode(xs)
+    rec_xs = vae.decode(zs, ys)
     plt.figure(figsize=(2, n))
-    for i, (x, y) in enumerate(dataset):
+    for i in range(n):
         plt.subplot(n, 2, 2*i+1)
-        plt.imshow(x[0], cmap='gray')
+        plt.imshow(xs[i, :, :, 0], cmap='gray')
+        plt.title(ys[i])
         plt.axis('off')
 
         plt.subplot(n, 2, 2*i+2)
-        x_rec = VAE(
-            x.reshape(1, 1, 28, 28),
-            torch.tensor(y).long().reshape(1,)
-        )
-        plt.imshow(x_rec[0, 0], cmap='gray')
+        plt.imshow(rec_xs[i, :, :, 0], cmap='gray')
         plt.axis('off')
 
-    plt.savefig(os.path.join(SCRIPT_OUT_DIR, f"{get_time_str()}_encode_decode.png"))
+    plt.savefig(os.path.join(OUT_DIR, f"{time_str}_encode_decode.png"))
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append(os.path.dirname(__file__))
+
+    from config import *
+    from util import create_out_dir, get_time_str, preprocess_image
+    from models import build_classifier, IDCVAE
+
     main()

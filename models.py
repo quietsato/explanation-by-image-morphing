@@ -29,6 +29,8 @@ class IDCVAE(Model):
         self.rec_loss_tracker = metrics.Mean(name="reconstruction_loss")
         self.kl_loss_tracker = metrics.Mean(name="kl_loss")
 
+        self.built = True
+
     @property
     def metrics(self):
         return [
@@ -40,10 +42,14 @@ class IDCVAE(Model):
     def encode(self, x) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         return self.E(x)
 
-    def decode(self, z, y) -> Tuple[tf.Tensor]:
+    def decode(self, z, y) -> tf.Tensor:
         y_onehot = tf.one_hot(y, num_classes)
         D_input = tf.concat([z, y_onehot], axis=1)
         return self.D(D_input)
+
+    def call(self, x: tf.Tensor, y: tf.Tensor):
+        z,_,_ = self.encode(x)
+        return self.decode(z, y)
 
     def train_step(self, data):
         x, y = data
