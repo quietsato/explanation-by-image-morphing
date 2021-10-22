@@ -9,40 +9,37 @@ import os
 tf.random.set_seed(42)
 
 
-C_WEIGHT_PATH = None
-# C_WEIGHT_PATH = os.path.join(os.path.dirname(__file__), "/out/C/checkpoint")
-VAE_WEIGHT_PATH = os.path.join(os.path.dirname(__file__), "out/VAE/CVAE.h5")
-
-
+C_WEIGHT_FILENAME = None
+VAE_WEIGHT_FILENAME = "CVAE.h5"
 
 
 def main():
     time_str = get_time_str()
     OUT_DIR = create_out_dir("main")
 
-
     _, (test_images, test_labels) = datasets.mnist.load_data()
     test_images = preprocess_image(test_images)
 
     classifier = build_classifier()
-    
+
     vae = IDCVAE()
     vae.call(test_images[0:1], test_labels[0:1])
     vae.compile()
 
-    if C_WEIGHT_PATH is not None:
-        C.load_weights(C_WEIGHT_PATH)
+    if C_WEIGHT_FILENAME is not None:
+        weight_path = os.path.join(OUT_BASE_DIR, "C", C_WEIGHT_FILENAME)
+        classifier.load_weights(weight_path)
 
-    if VAE_WEIGHT_PATH is not None:
-        vae.load_weights(VAE_WEIGHT_PATH)
-
+    if VAE_WEIGHT_FILENAME is not None:
+        weight_path = os.path.join(OUT_BASE_DIR, "VAE", VAE_WEIGHT_FILENAME)
+        vae.load_weights(weight_path)
 
     encode_decode_test(test_images[:10], test_labels[:10], vae, OUT_DIR, time_str)
 
 
 def encode_decode_test(xs, ys, vae, OUT_DIR: str, time_str: str):
     n = min(len(xs), len(ys))
-    zs,_,_ = vae.encode(xs)
+    zs, _, _ = vae.encode(xs)
     rec_xs = vae.decode(zs, ys)
     plt.figure(figsize=(2, n))
     for i in range(n):
