@@ -106,10 +106,12 @@ def build_decoder() -> Model:
             layers.Conv2DTranspose( 1, 3, strides=1, padding='same', activation='sigmoid')
         ], name="D")
 
-def reconstruction_loss(x, rec):
-    return tf.reduce_mean(tf.reduce_sum(
+def reconstruction_loss(x, rec, foreach=False):
+    loss = tf.reduce_sum(
         losses.binary_crossentropy(x, rec), axis=(1, 2)
-    ))
+    )
+    if foreach: return loss
+    else: return tf.reduce_mean(loss)
 def KL_loss(z_mean, z_log_var):
     return tf.reduce_mean(tf.reduce_sum(
         -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)), axis=1
