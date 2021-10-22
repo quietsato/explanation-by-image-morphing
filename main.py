@@ -43,8 +43,17 @@ def main():
         weight_path = os.path.join(OUT_BASE_DIR, "VAE", VAE_WEIGHT_FILENAME)
         vae.load_weights(weight_path)
 
+    # CVAE Test
     encode_decode_test(test_images[:10], test_labels[:10], vae, time_str)
-    cvae_decode_single_image_with_every_label(test_images[0], test_labels[0], vae, "test0", time_str)
+    cvae_decode_single_image_with_every_label(
+        test_images[0], test_labels[0], vae, "test0", time_str)
+
+    # Method 1. Using both of an ID-CVAE and a classifier
+    test_pred_classifier = classifier.predict(test_images)
+
+    # Method 2. Using only an ID-CVAE
+    test_pred_idcvae = classify_using_idcvae(test_images, vae)
+    print(tf.reduce_sum(tf.cast(test_pred_idcvae == test_labels, tf.int32)).numpy())
 
 
 def encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE, time_str: str):
@@ -89,6 +98,22 @@ def cvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: I
     plt.savefig(
         os.path.join(OUT_DIR, f"{time_str}_{image_id}_decode_single_image_with_every_label.png")
     )
+
+
+def classify_using_idcvae(xs: tf.Tensor, vae: IDCVAE):
+    dataset = tf.data.Dataset.from_tensor_slices(xs).batch(1024)
+    pred = []
+    for xs in dataset:
+        zs, _, _ = vae.encode(xs)
+        loss_batch = []
+        for y in range(num_classes):
+            ys = tf.tile(tf.constant([y], tf.int32), [len(zs)])
+            xs_rec = vae.decode(zs, ys)
+            loss = reconstruction_loss(xs, xs_rec, foreach=True)
+            loss_batch.append(loss)
+        pred_batch = tf.argmin(tf.transpose(tf.convert_to_tensor(loss_batch)), axis=1)
+        pred.append(pred_batch)
+    return tf.concat(pred, axis=0)
 
 
 if __name__ == "__main__":
