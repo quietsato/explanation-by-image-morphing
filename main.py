@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras import datasets, optimizers
+from tensorflow.keras import datasets, optimizers, Model
 
 import matplotlib.pyplot as plt
 import imageio
@@ -48,7 +48,11 @@ def main():
         test_images[0], test_labels[0], vae, "test0", time_str)
 
     # Method 1. Using both of an ID-CVAE and a classifier
-    test_pred_classifier = classifier.predict(test_images)
+    test_pred_classifier = tf.argmax(classifier.predict(test_images), axis=1)
+    test_images_misclassified = tf.boolean_mask(test_images,
+                                                tf.not_equal(test_pred_classifier, test_labels))
+    create_morphing_images_classifier_and_idcvae(
+        test_images_misclassified[0], classifier, vae, 1e-2, 10, "test0")
 
     # Method 2. Using only an ID-CVAE
     test_pred_idcvae = classify_using_idcvae(test_images, vae)
@@ -139,6 +143,50 @@ def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.
         os.path.join(OUT_DIR, f"{time_str}_idcvae_representative_points.png")
     )
     return tf.concat(representative, axis=0)
+
+
+def create_morphing_images_classifier_and_idcvae(x: tf.Tensor,
+                                                 classifier: Model,
+                                                 vae: IDCVAE,
+                                                 epsilon: int,
+                                                 n: int,
+                                                 image_id: str):
+    assert n > 0
+    assert epsilon > 0
+
+    plt.clf()
+    plt.figure(figsize=(1, 1))
+
+    def get_image_save_path(i):
+        return os.path.join(OUT_DIR, f"{time_str}_{image_id}_morphing_classifier_and_idcvae/{i:03}.png")
+
+    def create_z_mat(z: tf.Tensor) -> tf.Tensor:
+        move_plus = tf.math.multiply(tf.tile(z, [latent_dim, 1]), tf.linalg.eye(latent_dim))
+        move_minus = tf.math.multiply(tf.tile(z, [latent_dim, 1]), -tf.linalg.eye(latent_dim))
+        return tf.concat([move_plus, move_minus], axis=0)
+
+    if not os.path.exists(os.path.dirname(get_image_save_path(0))):
+        os.makedirs(os.path.dirname(get_image_save_path(0)))
+
+    plot_single_image(x)
+    plt.savefig(get_image_save_path(0))
+
+    c_pred = classifier(tf.expand_dims(x, axis=0))
+    label = tf.argmax(c_pred, axis=1)[0]
+
+    for i in range(n):
+        z, _, _ = vae.encode(tf.expand_dims(x, axis=0))
+        z_mat = create_z_mat(z)
+        x_dec = vae.decode(z_mat, label * tf.ones([len(z_mat)], dtype=tf.int64))
+        next_c_pred = classifier(x_dec)[:, label]
+
+        next_i = tf.argmax(next_c_pred)
+
+        plt.figure(figsize=(1, 1))
+        plot_single_image(x_dec[next_i])
+        plt.savefig(get_image_save_path(i+1))
+
+        z = z_mat[next_i:next_i+1]
 
 
 def create_morphing_images_idcvae_only(x: tf.Tensor,
