@@ -20,7 +20,7 @@ def build_classifier() -> Model:
 
 class IDCVAE(Model):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(IDCVAE, self).__init__(*args, **kwargs)
 
         self.E = build_encoder()
         self.D = build_decoder()
@@ -47,13 +47,8 @@ class IDCVAE(Model):
         D_input = tf.concat([z, y_onehot], axis=1)
         return self.D(D_input)
 
-    def call(self, x: tf.Tensor, y: tf.Tensor):
-        z,_,_ = self.encode(x)
-        return self.decode(z, y)
-
     def train_step(self, data):
         x, y = data
-    
         with tf.GradientTape() as tape:
             z, z_mean, z_log_var = self.encode(x)
             rec = self.decode(z, y)

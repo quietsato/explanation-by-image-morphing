@@ -26,14 +26,12 @@ time_str = get_time_str()
 
 
 def main():
-
     _, (test_images, test_labels) = datasets.mnist.load_data()
     test_images = preprocess_image(test_images)
 
     classifier = build_classifier()
 
     vae = IDCVAE()
-    vae.call(test_images[0:1], test_labels[0:1])
     vae.compile()
 
     if C_WEIGHT_FILENAME is not None:
