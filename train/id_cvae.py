@@ -2,6 +2,15 @@ import tensorflow as tf
 from tensorflow.keras import datasets, optimizers, callbacks
 import os
 
+if __name__ == "__main__":
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+    from config import *
+    from models import IDCVAE
+    from util import get_time_str, preprocess_image, create_log_dir, create_out_dir
+
+
 tf.random.set_seed(42)
 
 epochs = 3
@@ -46,13 +55,5 @@ def main():
         callbacks=[csv_logger, early_stopping, model_checkpoint]
     )
 
-
 if __name__ == "__main__":
-    import sys
-    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
-    from config import *
-    from models import IDCVAE
-    from util import get_time_str, preprocess_image, create_log_dir, create_out_dir
-
     main()
