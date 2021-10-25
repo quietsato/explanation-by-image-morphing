@@ -16,6 +16,8 @@ tf.random.set_seed(42)
 epochs = 3
 batch_size = 128
 
+verbose = 2
+
 
 def main():
     LOG_DIR = create_log_dir("VAE")
@@ -52,7 +54,8 @@ def main():
         batch_size=batch_size,
         epochs=epochs,
         shuffle=True,
-        callbacks=[csv_logger, early_stopping, model_checkpoint]
+        callbacks=[csv_logger, early_stopping, model_checkpoint],
+        verbose=verbose
     )
 
 if __name__ == "__main__":
