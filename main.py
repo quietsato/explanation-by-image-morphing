@@ -63,6 +63,14 @@ def main():
     create_morphing_images_idcvae_only(
         test_images[8], test_pred_idcvae[8], representative, vae, 10, "test8")
 
+    test_images_idcvae_misclassified = tf.boolean_mask(test_images,
+                                                       tf.not_equal(test_pred_idcvae, test_labels))
+    test_pred_idcvae_misclassified = tf.boolean_mask(test_pred_idcvae,
+                                                     tf.not_equal(test_pred_idcvae, test_labels))
+    create_morphing_images_idcvae_only(
+        test_images_idcvae_misclassified[0], test_pred_idcvae_misclassified[0], representative, vae, 10, "test_misclassified0"
+    )
+
 
 def encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE, time_str: str):
     n = min(len(xs), len(ys))
