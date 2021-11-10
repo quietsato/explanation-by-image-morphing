@@ -2,7 +2,6 @@ import tensorflow as tf
 from tensorflow.keras import datasets, optimizers, Model
 
 import matplotlib.pyplot as plt
-import imageio
 import os
 
 if __name__ == "__main__":
@@ -19,10 +18,7 @@ tf.random.set_seed(42)
 C_WEIGHT_FILENAME = None
 VAE_WEIGHT_FILENAME = "CVAE.h5"
 
-OUT_DIR = create_out_dir("main")
-
-
-time_str = get_time_str()
+OUT_DIR = create_out_dir(f"main/{get_time_str()}")
 
 
 def main():
@@ -43,9 +39,8 @@ def main():
         vae.load_weights(weight_path)
 
     # CVAE Test
-    encode_decode_test(test_images[:10], test_labels[:10], vae, time_str)
-    cvae_decode_single_image_with_every_label(
-        test_images[0], test_labels[0], vae, "test0", time_str)
+    encode_decode_test(test_images[:10], test_labels[:10], vae)
+    cvae_decode_single_image_with_every_label(test_images[0], test_labels[0], vae, "test0")
 
     # Method 1. Using both of an ID-CVAE and a classifier
     test_pred_classifier = tf.argmax(classifier.predict(test_images), axis=1)
@@ -72,7 +67,7 @@ def main():
     )
 
 
-def encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE, time_str: str):
+def encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
     n = min(len(xs), len(ys))
     zs, _, _ = vae.encode(xs)
     rec_xs = vae.decode(zs, ys)
@@ -87,10 +82,10 @@ def encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE, time_str: str)
         plt.imshow(rec_xs[i, :, :, 0], cmap='gray')
         plt.axis('off')
 
-    plt.savefig(os.path.join(OUT_DIR, f"{time_str}_encode_decode.png"))
+    plt.savefig(os.path.join(OUT_DIR, "encode_decode.png"))
 
 
-def cvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: IDCVAE, image_id: str, time_str: str):
+def cvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: IDCVAE, image_id: str):
     decode_cols = (num_classes+1)//2
     figure_cols = 1 + decode_cols
 
@@ -111,9 +106,7 @@ def cvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: I
         plt.axis('off')
         plt.title(f'label: {i}')
 
-    plt.savefig(
-        os.path.join(OUT_DIR, f"{time_str}_{image_id}_decode_single_image_with_every_label.png")
-    )
+    plt.savefig(os.path.join(OUT_DIR, f"{image_id}_decode_single_image_with_every_label.png"))
     plt.close()
 
 
@@ -147,9 +140,7 @@ def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.
         plt.subplot(2, (num_classes + 1)//2, i + 1)
         plot_single_image(x[0])
 
-    plt.savefig(
-        os.path.join(OUT_DIR, f"{time_str}_idcvae_representative_points.png")
-    )
+    plt.savefig(os.path.join(OUT_DIR, f"idcvae_representative_points.png"))
     return tf.concat(representative, axis=0)
 
 
@@ -166,7 +157,7 @@ def create_morphing_images_classifier_and_idcvae(x: tf.Tensor,
     plt.figure(figsize=(1, 1))
 
     def get_image_save_path(i):
-        return os.path.join(OUT_DIR, f"{time_str}_{image_id}_morphing_classifier_and_idcvae/{i:03}.png")
+        return os.path.join(OUT_DIR, f"{image_id}_morphing_classifier_and_idcvae/{i:03}.png")
 
     def create_z_mat(z: tf.Tensor) -> tf.Tensor:
         move_plus = tf.math.multiply(tf.tile(z, [latent_dim, 1]), tf.linalg.eye(latent_dim))
@@ -209,7 +200,7 @@ def create_morphing_images_idcvae_only(x: tf.Tensor,
     assert n > 0
 
     def get_image_save_path(i):
-        return os.path.join(OUT_DIR, f"{time_str}_{image_id}_morphing_idcvae_only/{i:03}.png")
+        return os.path.join(OUT_DIR, f"{image_id}_morphing_idcvae_only/{i:03}.png")
 
     if not os.path.exists(os.path.dirname(get_image_save_path(0))):
         os.makedirs(os.path.dirname(get_image_save_path(0)))
