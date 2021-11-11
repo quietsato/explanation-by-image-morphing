@@ -16,15 +16,17 @@ if __name__ == "__main__":
 tf.random.set_seed(42)
 
 C_WEIGHT_FILENAME = None
-VAE_WEIGHT_FILENAME = "CVAE.h5"
+VAE_WEIGHT_FILENAME = "VAE.h5"
 
 OUT_DIR = create_out_dir(f"main/{get_time_str()}")
 
 
 def main():
+    print("==> Setup dataset")
     _, (test_images, test_labels) = datasets.mnist.load_data()
     test_images = preprocess_image(test_images)
 
+    print("==> Setup model")
     classifier = build_classifier()
 
     vae = IDCVAE()
@@ -38,36 +40,55 @@ def main():
         weight_path = os.path.join(OUT_BASE_DIR, "VAE", VAE_WEIGHT_FILENAME)
         vae.load_weights(weight_path)
 
-    # CVAE Test
-    encode_decode_test(test_images[:10], test_labels[:10], vae)
-    cvae_decode_single_image_with_every_label(test_images[0], test_labels[0], vae, "test0")
+    # IDCVAE Test
+    print("==> IDCVAE Test")
+    idcvae_encode_decode_test(test_images[:10], test_labels[:10], vae)
+    idcvae_decode_single_image_with_every_label(test_images[0], test_labels[0], vae, "test0")
 
     # Method 1. Using both of an ID-CVAE and a classifier
-    test_pred_classifier = tf.argmax(classifier.predict(test_images), axis=1)
-    test_images_misclassified = tf.boolean_mask(test_images,
-                                                tf.not_equal(test_pred_classifier, test_labels))
-    create_morphing_images_classifier_and_idcvae(
-        test_images_misclassified[0], classifier, vae, 1e-2, 10, "test0")
+    # test_pred_classifier = tf.argmax(classifier.predict(test_images), axis=1)
+    # test_images_misclassified = tf.boolean_mask(test_images,
+    #                                             tf.not_equal(test_pred_classifier, test_labels))
+    # create_morphing_images_classifier_and_idcvae(
+    #     test_images_misclassified[0], classifier, vae, 1e-2, 10, "test0")
 
     # Method 2. Using only an ID-CVAE
+    print("==> Classify images using IDCVAE")
     test_pred_idcvae = classify_using_idcvae(test_images, vae)
-    print(tf.reduce_sum(tf.cast(test_pred_idcvae == test_labels, tf.int32)).numpy())
-    representative = find_representative_points(test_images, test_pred_idcvae, vae)
-    create_morphing_images_idcvae_only(
-        test_images[0], test_pred_idcvae[0], representative, vae, 10, "test0")
-    create_morphing_images_idcvae_only(
-        test_images[8], test_pred_idcvae[8], representative, vae, 10, "test8")
+    acc = calc_classification_accuracy(test_pred_idcvae, test_labels).numpy()
+    print(f"Test Accuracy: {acc}/{len(test_labels)}")
 
     test_images_idcvae_misclassified = tf.boolean_mask(test_images,
                                                        tf.not_equal(test_pred_idcvae, test_labels))
     test_pred_idcvae_misclassified = tf.boolean_mask(test_pred_idcvae,
                                                      tf.not_equal(test_pred_idcvae, test_labels))
+
+    print("==> Find representing points")
+    representative = find_representative_points(test_images, test_pred_idcvae, vae)
+
+    print("==> Create morphing images")
+
+    print("test 00000")
     create_morphing_images_idcvae_only(
-        test_images_idcvae_misclassified[0], test_pred_idcvae_misclassified[0], representative, vae, 10, "test_misclassified0"
-    )
+        test_images[0], test_pred_idcvae[0], representative, vae, 10, "test_00000")
+
+    print("test 00008")
+    create_morphing_images_idcvae_only(
+        test_images[8], test_pred_idcvae[8], representative, vae, 10, "test_00008")
+
+    for i in range(len(test_images_idcvae_misclassified)):
+        print(f"test missclassified {i:05}")
+        create_morphing_images_idcvae_only(
+            test_images_idcvae_misclassified[0],
+            test_pred_idcvae_misclassified[0],
+            representative,
+            vae,
+            10,
+            f"test_misclassified_{i:05}"
+        )
 
 
-def encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
+def idcvae_encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
     n = min(len(xs), len(ys))
     zs, _, _ = vae.encode(xs)
     rec_xs = vae.decode(zs, ys)
@@ -85,7 +106,7 @@ def encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
     plt.savefig(os.path.join(OUT_DIR, "encode_decode.png"))
 
 
-def cvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: IDCVAE, image_id: str):
+def idcvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: IDCVAE, image_id: str):
     decode_cols = (num_classes+1)//2
     figure_cols = 1 + decode_cols
 
@@ -110,6 +131,9 @@ def cvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: I
     plt.close()
 
 
+#
+# Image classification using IDCVAE
+#
 def classify_using_idcvae(xs: tf.Tensor, vae: IDCVAE):
     dataset = tf.data.Dataset.from_tensor_slices(xs).batch(1024)
     pred = []
@@ -124,6 +148,10 @@ def classify_using_idcvae(xs: tf.Tensor, vae: IDCVAE):
         pred_batch = tf.argmin(tf.transpose(tf.convert_to_tensor(loss_batch)), axis=1)
         pred.append(pred_batch)
     return tf.concat(pred, axis=0)
+
+
+def calc_classification_accuracy(y, y_pred) -> tf.Tensor:
+    return tf.reduce_sum(tf.cast(y_pred == y, tf.int32))
 
 
 def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.Tensor:
@@ -144,48 +172,51 @@ def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.
     return tf.concat(representative, axis=0)
 
 
-def create_morphing_images_classifier_and_idcvae(x: tf.Tensor,
-                                                 classifier: Model,
-                                                 vae: IDCVAE,
-                                                 epsilon: int,
-                                                 n: int,
-                                                 image_id: str):
-    assert n > 0
-    assert epsilon > 0
+#
+# Create morphing images
+#
+# def create_morphing_images_classifier_and_idcvae(x: tf.Tensor,
+#                                                  classifier: Model,
+#                                                  vae: IDCVAE,
+#                                                  epsilon: int,
+#                                                  n: int,
+#                                                  image_id: str):
+#     assert n > 0
+#     assert epsilon > 0
 
-    plt.clf()
-    plt.figure(figsize=(1, 1))
+#     plt.clf()
+#     plt.figure(figsize=(1, 1))
 
-    def get_image_save_path(i):
-        return os.path.join(OUT_DIR, f"{image_id}_morphing_classifier_and_idcvae/{i:03}.png")
+#     def get_image_save_path(i):
+#         return os.path.join(OUT_DIR, f"{image_id}_morphing_classifier_and_idcvae/{i:03}.png")
 
-    def create_z_mat(z: tf.Tensor) -> tf.Tensor:
-        move_plus = tf.math.multiply(tf.tile(z, [latent_dim, 1]), tf.linalg.eye(latent_dim))
-        move_minus = tf.math.multiply(tf.tile(z, [latent_dim, 1]), -tf.linalg.eye(latent_dim))
-        return tf.concat([move_plus, move_minus], axis=0)
+#     def create_z_mat(z: tf.Tensor) -> tf.Tensor:
+#         move_plus = tf.math.multiply(tf.tile(z, [latent_dim, 1]), tf.linalg.eye(latent_dim))
+#         move_minus = tf.math.multiply(tf.tile(z, [latent_dim, 1]), -tf.linalg.eye(latent_dim))
+#         return tf.concat([move_plus, move_minus], axis=0)
 
-    if not os.path.exists(os.path.dirname(get_image_save_path(0))):
-        os.makedirs(os.path.dirname(get_image_save_path(0)))
+#     if not os.path.exists(os.path.dirname(get_image_save_path(0))):
+#         os.makedirs(os.path.dirname(get_image_save_path(0)))
 
-    plot_single_image(x)
-    plt.savefig(get_image_save_path(0))
+#     plot_single_image(x)
+#     plt.savefig(get_image_save_path(0))
 
-    c_pred = classifier(tf.expand_dims(x, axis=0))
-    label = tf.argmax(c_pred, axis=1)[0]
+#     c_pred = classifier(tf.expand_dims(x, axis=0))
+#     label = tf.argmax(c_pred, axis=1)[0]
 
-    for i in range(n):
-        z, _, _ = vae.encode(tf.expand_dims(x, axis=0))
-        z_mat = create_z_mat(z)
-        x_dec = vae.decode(z_mat, label * tf.ones([len(z_mat)], dtype=tf.int64))
-        next_c_pred = classifier(x_dec)[:, label]
+#     for i in range(n):
+#         z, _, _ = vae.encode(tf.expand_dims(x, axis=0))
+#         z_mat = create_z_mat(z)
+#         x_dec = vae.decode(z_mat, label * tf.ones([len(z_mat)], dtype=tf.int64))
+#         next_c_pred = classifier(x_dec)[:, label]
 
-        next_i = tf.argmax(next_c_pred)
+#         next_i = tf.argmax(next_c_pred)
 
-        plt.figure(figsize=(1, 1))
-        plot_single_image(x_dec[next_i])
-        plt.savefig(get_image_save_path(i+1))
+#         plt.figure(figsize=(1, 1))
+#         plot_single_image(x_dec[next_i])
+#         plt.savefig(get_image_save_path(i+1))
 
-        z = z_mat[next_i:next_i+1]
+#         z = z_mat[next_i:next_i+1]
 
 
 def create_morphing_images_idcvae_only(x: tf.Tensor,
