@@ -55,7 +55,7 @@ def main():
     # Method 2. Using only an ID-CVAE
     print("==> Classify images using IDCVAE")
     test_pred_idcvae = classify_using_idcvae(test_images, vae)
-    acc = calc_classification_accuracy(test_pred_idcvae, test_labels).numpy()
+    acc = count_successfully_classified(test_pred_idcvae, test_labels).numpy()
     print(f"Test Accuracy: {acc}/{len(test_labels)}")
 
     test_images_idcvae_misclassified = tf.boolean_mask(test_images,
@@ -150,7 +150,7 @@ def classify_using_idcvae(xs: tf.Tensor, vae: IDCVAE):
     return tf.concat(pred, axis=0)
 
 
-def calc_classification_accuracy(y, y_pred) -> tf.Tensor:
+def count_successfully_classified(y, y_pred) -> tf.Tensor:
     return tf.reduce_sum(tf.cast(y_pred == y, tf.int32))
 
 
