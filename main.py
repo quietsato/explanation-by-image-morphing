@@ -79,8 +79,8 @@ def main():
     for i in range(len(test_images_idcvae_misclassified)):
         print(f"test missclassified {i:05}")
         create_morphing_images_idcvae_only(
-            test_images_idcvae_misclassified[0],
-            test_pred_idcvae_misclassified[0],
+            test_images_idcvae_misclassified[i],
+            test_pred_idcvae_misclassified[i],
             representative,
             vae,
             10,
