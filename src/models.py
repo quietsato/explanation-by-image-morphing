@@ -6,11 +6,11 @@ from config import *
 
 
 class IDCVAE(Model):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, latent_dim=16, *args, **kwargs):
         super(IDCVAE, self).__init__(*args, **kwargs)
 
-        self.E = build_encoder()
-        self.D = build_decoder()
+        self.E = build_encoder(latent_dim)
+        self.D = build_decoder(latent_dim)
 
         self.total_loss_tracker = metrics.Mean(name="total_loss")
         self.rec_loss_tracker = metrics.Mean(name="reconstruction_loss")
@@ -66,7 +66,7 @@ class Sampling(layers.Layer):
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
 
-def build_encoder() -> Model:
+def build_encoder(latent_dim: int) -> Model:
     input = Input((image_size, image_size, image_channels))
     x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(input)
     x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
@@ -78,7 +78,7 @@ def build_encoder() -> Model:
     return Model(input, [z, z_mean, z_log_var], name="E")
 
 
-def build_decoder() -> Model:
+def build_decoder(latent_dim: int) -> Model:
     return Sequential(layers=[
         layers.InputLayer((latent_dim + num_classes, )),
         layers.Dense(7 * 7 * 64),
