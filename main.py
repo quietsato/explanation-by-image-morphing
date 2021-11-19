@@ -43,7 +43,11 @@ def main():
     # IDCVAE Test
     print("==> IDCVAE Test")
     idcvae_encode_decode_test(test_images[:10], test_labels[:10], vae)
-    idcvae_decode_single_image_with_every_label(test_images[0], test_labels[0], vae, "test0")
+    idcvae_decode_single_image_with_every_label(
+        test_images[0],
+        test_labels[0],
+        vae,
+        "idcvae_decode_with_every_label_test00000")
 
     # Method 1. Using both of an ID-CVAE and a classifier
     # test_pred_classifier = tf.argmax(classifier.predict(test_images), axis=1)
@@ -75,6 +79,12 @@ def main():
     print("test 00008")
     create_morphing_images_idcvae_only(
         test_images[8], test_pred_idcvae[8], representative, vae, 10, "test_00008")
+    idcvae_decode_single_image_with_every_label(
+            test_images[8],
+            test_labels[8],
+            vae,
+            f"test_00008_decode_with_every_label.png"
+        )
 
     for i in range(len(test_images_idcvae_misclassified)):
         print(f"test missclassified {i:05}")
@@ -85,6 +95,12 @@ def main():
             vae,
             10,
             f"test_misclassified_{i:05}"
+        )
+        idcvae_decode_single_image_with_every_label(
+            test_images_idcvae_misclassified[i],
+            test_pred_idcvae_misclassified[i],
+            vae,
+            f"test_misclassified_{i:05}/decode_with_every_label.png"
         )
 
 
@@ -106,7 +122,11 @@ def idcvae_encode_decode_test(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
     plt.savefig(os.path.join(OUT_DIR, "encode_decode.png"))
 
 
-def idcvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae: IDCVAE, image_id: str):
+def idcvae_decode_single_image_with_every_label(
+        x: tf.Tensor,
+        y: tf.Tensor,
+        vae: IDCVAE,
+        out_path: str):
     decode_cols = (num_classes+1)//2
     figure_cols = 1 + decode_cols
 
@@ -127,7 +147,7 @@ def idcvae_decode_single_image_with_every_label(x: tf.Tensor, y: tf.Tensor, vae:
         plt.axis('off')
         plt.title(f'label: {i}')
 
-    plt.savefig(os.path.join(OUT_DIR, f"{image_id}_decode_single_image_with_every_label.png"))
+    plt.savefig(os.path.join(OUT_DIR, out_path))
     plt.close()
 
 
