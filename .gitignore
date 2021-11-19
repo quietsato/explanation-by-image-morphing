@@ -5,3 +5,5 @@ out/
 log/
 .tool-versions
 .vscode/
+.env*
+!.env.example

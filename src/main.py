@@ -1,8 +1,11 @@
 import tensorflow as tf
-from tensorflow.keras import datasets, Model
+from tensorflow.keras import datasets
 
 import matplotlib.pyplot as plt
 import os
+
+from dotenv import load_dotenv
+load_dotenv()
 
 if __name__ == "__main__":
     import sys
@@ -14,9 +17,14 @@ if __name__ == "__main__":
 
 tf.random.set_seed(42)
 
-C_WEIGHT_FILENAME = None
-VAE_WEIGHT_FILENAME = "VAE.h5"
 
+WEIGHT_FILEPATH = os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    os.getenv(
+        "IDCVAE_WEIGHT_RELATIVE_PATH", "./IDCVAE.h5"
+    ),
+)
 OUT_DIR = create_out_dir(f"main/{get_time_str()}")
 
 
@@ -29,9 +37,8 @@ def main():
     vae = IDCVAE()
     vae.compile()
 
-    if VAE_WEIGHT_FILENAME is not None:
-        weight_path = os.path.join(OUT_BASE_DIR, "VAE", VAE_WEIGHT_FILENAME)
-        vae.load_weights(weight_path)
+    if WEIGHT_FILEPATH is not None:
+        vae.load_weights(WEIGHT_FILEPATH)
 
     # IDCVAE Test
     print("==> IDCVAE Test")
