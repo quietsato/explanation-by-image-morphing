@@ -6,7 +6,7 @@ from config import *
 
 def get_time_str():
     JST = timezone(timedelta(hours=+9), 'JST')
-    return datetime.now(JST).strftime("%Y%m%d%H%M%S")
+    return datetime.now(JST).strftime("%Y-%m-%d-%H-%M-%S")
 
 
 def preprocess_image(image: np.ndarray):
