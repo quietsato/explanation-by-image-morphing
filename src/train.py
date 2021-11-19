@@ -20,10 +20,9 @@ verbose = 2
 
 
 def main():
-    LOG_DIR = create_log_dir("VAE")
-    OUT_DIR = create_out_dir("VAE")
-
     time_str = get_time_str()
+    OUT_DIR = create_out_dir(f"train/{time_str}")
+
     (train_images, train_labels), _ = datasets.mnist.load_data()
     train_images = preprocess_image(train_images)
 
@@ -32,22 +31,30 @@ def main():
         optimizer=optimizers.Adam(learning_rate=1e-4)
     )
 
+    #
     # Callbacks
+    #
     csv_logger = callbacks.CSVLogger(
-        os.path.join(LOG_DIR, f"{time_str}.csv")
+        os.path.join(OUT_DIR, "log.csv") # 0 based indexing epochs
     )
     early_stopping = callbacks.EarlyStopping(
         monitor='loss',
         patience=5
     )
     model_checkpoint = callbacks.ModelCheckpoint(
-        os.path.join(OUT_DIR,
-                     time_str + "_weights_{epoch:03d}_{loss:04.3f}_{reconstruction_loss:04.3f}_{kl_loss:03.3f}.h5"),
+        os.path.join(
+            OUT_DIR,
+            "weights",
+            "{epoch:03d}.h5" # 1 based indexing epochs
+        ),
         monitor='loss',
         save_weights_only=True,
     )
+    os.mkdir(os.path.join(OUT_DIR, "weights"))
 
+    #
     # Train
+    #
     VAE.fit(
         train_images,
         train_labels,
@@ -57,6 +64,7 @@ def main():
         callbacks=[csv_logger, early_stopping, model_checkpoint],
         verbose=verbose
     )
+
 
 if __name__ == "__main__":
     main()
