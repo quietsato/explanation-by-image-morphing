@@ -5,19 +5,6 @@ from tensorflow.keras import layers, metrics, losses, Model, Input, Sequential
 from config import *
 
 
-def build_classifier() -> Model:
-    return Sequential(layers=[
-        layers.InputLayer((image_size, image_size, image_channels)),
-        layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
-        layers.MaxPooling2D(pool_size=(2, 2)),
-        layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
-        layers.MaxPooling2D(pool_size=(2, 2)),
-        layers.Flatten(),
-        layers.Dropout(0.5),
-        layers.Dense(num_classes, activation="softmax"),
-    ], name="C")
-
-
 class IDCVAE(Model):
     def __init__(self, *args, **kwargs):
         super(IDCVAE, self).__init__(*args, **kwargs)
@@ -54,8 +41,8 @@ class IDCVAE(Model):
             rec = self.decode(z, y)
             rec_loss = reconstruction_loss(x, rec)
             kl_loss = KL_loss(z_mean, z_log_var)
-            total_loss = rec_loss + kl_loss     
-        
+            total_loss = rec_loss + kl_loss
+
         gradients = tape.gradient(total_loss, self.trainable_weights)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_weights))
 
@@ -93,20 +80,25 @@ def build_encoder() -> Model:
 
 def build_decoder() -> Model:
     return Sequential(layers=[
-            layers.InputLayer((latent_dim + num_classes, )),
-            layers.Dense(7 * 7 * 64),
-            layers.Reshape((7, 7, 64)),
-            layers.Conv2DTranspose(64, 3, strides=2, padding='same', activation='relu'),
-            layers.Conv2DTranspose(32, 3, strides=2, padding='same', activation='relu'),
-            layers.Conv2DTranspose( 1, 3, strides=1, padding='same', activation='sigmoid')
-        ], name="D")
+        layers.InputLayer((latent_dim + num_classes, )),
+        layers.Dense(7 * 7 * 64),
+        layers.Reshape((7, 7, 64)),
+        layers.Conv2DTranspose(64, 3, strides=2, padding='same', activation='relu'),
+        layers.Conv2DTranspose(32, 3, strides=2, padding='same', activation='relu'),
+        layers.Conv2DTranspose(1, 3, strides=1, padding='same', activation='sigmoid')
+    ], name="D")
+
 
 def reconstruction_loss(x, rec, foreach=False):
     loss = tf.reduce_sum(
         losses.binary_crossentropy(x, rec), axis=(1, 2)
     )
-    if foreach: return loss
-    else: return tf.reduce_mean(loss)
+    if foreach:
+        return loss
+    else:
+        return tf.reduce_mean(loss)
+
+
 def KL_loss(z_mean, z_log_var):
     return tf.reduce_mean(tf.reduce_sum(
         -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)), axis=1
