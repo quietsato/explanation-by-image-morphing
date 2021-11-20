@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
     from config import *
     from models import IDCVAE
-    from util import get_time_str, preprocess_image, create_log_dir, create_out_dir
+    from util import get_time_str, preprocess_image, create_out_dir
 
 
 tf.random.set_seed(42)
