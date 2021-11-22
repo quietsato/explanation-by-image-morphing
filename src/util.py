@@ -15,10 +15,6 @@ def preprocess_image(image: np.ndarray):
     return image
 
 
-def create_log_dir(name: str) -> str:
-    return _create_dir(LOG_BASE_DIR, name)
-
-
 def create_out_dir(name: str) -> str:
     return _create_dir(OUT_BASE_DIR, name)
 
