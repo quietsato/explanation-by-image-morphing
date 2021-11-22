@@ -25,7 +25,10 @@ WEIGHT_FILEPATH = os.path.join(
         "IDCVAE_WEIGHT_RELATIVE_PATH", "./IDCVAE.h5"
     ),
 )
-OUT_DIR = create_out_dir(f"main/{get_time_str()}")
+time_str = get_time_str()
+OUT_DIR = create_out_dir(f"main/{time_str}")
+TEST_IMAGE_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test")
+TEST_MISCLASSIFIED_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test_misclassified")
 
 
 def main():
