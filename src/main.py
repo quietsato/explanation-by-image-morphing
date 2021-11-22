@@ -27,7 +27,7 @@ WEIGHT_FILEPATH = os.path.join(
 )
 time_str = get_time_str()
 OUT_DIR = create_out_dir(f"main/{time_str}")
-TEST_IMAGE_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test")
+TEST_IMAGE_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test_image")
 TEST_MISCLASSIFIED_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test_misclassified")
 
 
@@ -61,19 +61,23 @@ def main():
 
     print("==> Create morphing images")
 
-    print("test 00000")
-    generate_morphing_images(
-        test_images[0], test_pred[0], representative, vae, 10, "test_00000")
-
-    print("test 00008")
-    generate_morphing_images(
-        test_images[8], test_pred[8], representative, vae, 10, "test_00008")
-    decode_image_for_every_label(
-        test_images[8],
-        test_labels[8],
-        vae,
-        f"test_00008_decode_with_every_label.png"
-    )
+    test_index = list(range(10))
+    for i in test_index:
+        print(f"test {i:05}")
+        generate_morphing_images(
+            test_images[i],
+            test_pred[i],
+            representative,
+            vae,
+            10,
+            f"{i:05}"
+        )
+        decode_image_for_every_label(
+            test_images[i],
+            test_labels[i],
+            vae,
+            f"{i:05}"
+        )
 
     for i in range(len(test_images_misclassified)):
         print(f"test missclassified {i:05}")
