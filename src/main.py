@@ -12,12 +12,12 @@ if __name__ == "__main__":
     sys.path.append(os.path.dirname(__file__))
 
     from config import *
-    from util import create_out_dir, get_time_str, preprocess_image
+    from util import create_out_dir, get_time_str, preprocess_image, save_model_summary
     from models import IDCVAE, reconstruction_loss
 
 tf.random.set_seed(42)
 
-
+IDCVAE_LATENT_DIM = 16
 WEIGHT_FILEPATH = os.path.join(
     os.path.dirname(__file__),
     "..",
@@ -25,32 +25,37 @@ WEIGHT_FILEPATH = os.path.join(
         "IDCVAE_WEIGHT_RELATIVE_PATH", "./IDCVAE.h5"
     ),
 )
-OUT_DIR = create_out_dir(f"main/{get_time_str()}")
+time_str = get_time_str()
+OUT_DIR = create_out_dir(f"main/{time_str}")
+TEST_IMAGE_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test_image")
+TEST_MISCLASSIFIED_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test_misclassified")
 
 
 def main():
     print("==> Setup dataset")
-    _, (test_images, test_labels) = datasets.mnist.load_data()
+    (train_images, train_labels), (test_images, test_labels) = datasets.mnist.load_data()
+    train_images = preprocess_image(train_images)
     test_images = preprocess_image(test_images)
 
     print("==> Setup model")
-    vae = IDCVAE()
+    vae = IDCVAE(IDCVAE_LATENT_DIM)
     vae.compile()
+
+    save_idcvae_summary(vae, OUT_DIR)
 
     if WEIGHT_FILEPATH is not None:
         vae.load_weights(WEIGHT_FILEPATH)
 
-    # IDCVAE Test
-    print("==> IDCVAE Test")
-    encode_decode_images(test_images[:10], test_labels[:10], vae)
-    decode_image_for_every_label(
-        test_images[0],
-        test_labels[0],
+    print("==> Find representative points")
+    representative = find_representative_points(
+        train_images,
+        train_labels,
         vae,
-        "idcvae_decode_with_every_label_test00000")
+        os.path.join(OUT_DIR, "representative_points.png")
+    )
 
     print("==> Classify images using IDCVAE")
-    test_pred = classify_using(test_images, vae)
+    test_pred = classify(test_images, vae)
     acc = count_successfully_classified(test_pred, test_labels).numpy()
     print(f"Test Accuracy: {acc}/{len(test_labels)}")
 
@@ -59,24 +64,25 @@ def main():
     test_pred_misclassified = tf.boolean_mask(test_pred,
                                               tf.not_equal(test_pred, test_labels))
 
-    print("==> Find representing points")
-    representative = find_representative_points(test_images, test_pred, vae)
-
     print("==> Create morphing images")
 
-    print("test 00000")
-    generate_morphing_images(
-        test_images[0], test_pred[0], representative, vae, 10, "test_00000")
-
-    print("test 00008")
-    generate_morphing_images(
-        test_images[8], test_pred[8], representative, vae, 10, "test_00008")
-    decode_image_for_every_label(
-        test_images[8],
-        test_labels[8],
-        vae,
-        f"test_00008_decode_with_every_label.png"
-    )
+    test_index = list(range(10))
+    for i in test_index:
+        print(f"test {i:05}")
+        generate_morphing_images(
+            test_images[i],
+            test_pred[i],
+            representative,
+            vae,
+            10,
+            os.path.join(TEST_IMAGE_MORPH_OUT_DIR, f"{i:05}")
+        )
+        decode_image_for_every_label(
+            test_images[i],
+            test_labels[i],
+            vae,
+            os.path.join(TEST_IMAGE_MORPH_OUT_DIR, f"{i:05}", "decode_for_every_label.png")
+        )
 
     for i in range(len(test_images_misclassified)):
         print(f"test missclassified {i:05}")
@@ -86,17 +92,20 @@ def main():
             representative,
             vae,
             10,
-            f"test_misclassified_{i:05}"
+            os.path.join(TEST_MISCLASSIFIED_MORPH_OUT_DIR, f"{i:05}")
         )
         decode_image_for_every_label(
             test_images_misclassified[i],
             test_pred_misclassified[i],
             vae,
-            f"test_misclassified_{i:05}/decode_with_every_label.png"
+            os.path.join(TEST_MISCLASSIFIED_MORPH_OUT_DIR, f"{i:05}", "decode_for_every_label.png")
         )
 
 
-def encode_decode_images(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
+def encode_decode_images(xs: tf.Tensor,
+                         ys: tf.Tensor,
+                         vae: IDCVAE,
+                         out_path: str):
     n = min(len(xs), len(ys))
     zs, _, _ = vae.encode(xs)
     rec_xs = vae.decode(zs, ys)
@@ -111,7 +120,18 @@ def encode_decode_images(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
         plt.imshow(rec_xs[i, :, :, 0], cmap='gray')
         plt.axis('off')
 
-    plt.savefig(os.path.join(OUT_DIR, "encode_decode.png"))
+    plt.savefig(out_path)
+
+
+def save_idcvae_summary(vae: IDCVAE, out_dir: str):
+    save_model_summary(
+        vae.E,
+        os.path.join(out_dir, "idcvae_encoder_summary.txt")
+    )
+    save_model_summary(
+        vae.D,
+        os.path.join(out_dir, "idcvae_decoder_summary.txt")
+    )
 
 
 def decode_image_for_every_label(
@@ -139,14 +159,14 @@ def decode_image_for_every_label(
         plt.axis('off')
         plt.title(f'label: {i}')
 
-    plt.savefig(os.path.join(OUT_DIR, out_path))
+    plt.savefig(out_path)
     plt.close()
 
 
 #
 # Image classification using IDCVAE
 #
-def classify_using(xs: tf.Tensor, vae: IDCVAE):
+def classify(xs: tf.Tensor, vae: IDCVAE):
     dataset = tf.data.Dataset.from_tensor_slices(xs).batch(1024)
     pred = []
     for xs in dataset:
@@ -166,7 +186,10 @@ def count_successfully_classified(y, y_pred) -> tf.Tensor:
     return tf.reduce_sum(tf.cast(y_pred == y, tf.int32))
 
 
-def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.Tensor:
+def find_representative_points(xs: tf.Tensor,
+                               ys: tf.Tensor,
+                               vae: IDCVAE,
+                               out_path: str) -> tf.Tensor:
     plt.figure(figsize=((num_classes+1)//2, 2))
 
     zs, _, _ = vae.encode(xs)
@@ -180,7 +203,7 @@ def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.
         plt.subplot(2, (num_classes + 1)//2, i + 1)
         plot_single_image(x[0])
 
-    plt.savefig(os.path.join(OUT_DIR, f"idcvae_representative_points.png"))
+    plt.savefig(out_path)
     return tf.concat(representative, axis=0)
 
 
@@ -199,7 +222,7 @@ def generate_morphing_images(x: tf.Tensor,
     assert n > 0
 
     def get_image_save_path(i):
-        return os.path.join(OUT_DIR, out_dir, f"{i:03}.png")
+        return os.path.join(out_dir, f"{i:03}.png")
 
     if not os.path.exists(os.path.dirname(get_image_save_path(0))):
         os.makedirs(os.path.dirname(get_image_save_path(0)))
