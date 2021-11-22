@@ -47,7 +47,12 @@ def main():
         vae.load_weights(WEIGHT_FILEPATH)
 
     print("==> Find representative points")
-    representative = find_representative_points(train_images, train_labels, vae)
+    representative = find_representative_points(
+        train_images,
+        train_labels,
+        vae,
+        os.path.join(OUT_DIR, "representative_points.png")
+    )
 
     print("==> Classify images using IDCVAE")
     test_pred = classify(test_images, vae)
@@ -70,13 +75,13 @@ def main():
             representative,
             vae,
             10,
-            f"{i:05}"
+            os.path.join(TEST_IMAGE_MORPH_OUT_DIR, f"{i:05}")
         )
         decode_image_for_every_label(
             test_images[i],
             test_labels[i],
             vae,
-            f"{i:05}"
+            os.path.join(TEST_IMAGE_MORPH_OUT_DIR, f"{i:05}", "decode_for_every_label.png")
         )
 
     for i in range(len(test_images_misclassified)):
@@ -87,17 +92,20 @@ def main():
             representative,
             vae,
             10,
-            f"test_misclassified_{i:05}"
+            os.path.join(TEST_MISCLASSIFIED_MORPH_OUT_DIR, f"{i:05}")
         )
         decode_image_for_every_label(
             test_images_misclassified[i],
             test_pred_misclassified[i],
             vae,
-            f"test_misclassified_{i:05}/decode_with_every_label.png"
+            os.path.join(TEST_MISCLASSIFIED_MORPH_OUT_DIR, f"{i:05}", "decode_for_every_label.png")
         )
 
 
-def encode_decode_images(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
+def encode_decode_images(xs: tf.Tensor,
+                         ys: tf.Tensor,
+                         vae: IDCVAE,
+                         out_path: str):
     n = min(len(xs), len(ys))
     zs, _, _ = vae.encode(xs)
     rec_xs = vae.decode(zs, ys)
@@ -112,7 +120,7 @@ def encode_decode_images(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
         plt.imshow(rec_xs[i, :, :, 0], cmap='gray')
         plt.axis('off')
 
-    plt.savefig(os.path.join(OUT_DIR, "encode_decode.png"))
+    plt.savefig(out_path)
 
 
 def save_idcvae_summary(vae: IDCVAE, out_dir: str):
@@ -151,7 +159,7 @@ def decode_image_for_every_label(
         plt.axis('off')
         plt.title(f'label: {i}')
 
-    plt.savefig(os.path.join(OUT_DIR, out_path))
+    plt.savefig(out_path)
     plt.close()
 
 
@@ -178,7 +186,10 @@ def count_successfully_classified(y, y_pred) -> tf.Tensor:
     return tf.reduce_sum(tf.cast(y_pred == y, tf.int32))
 
 
-def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.Tensor:
+def find_representative_points(xs: tf.Tensor,
+                               ys: tf.Tensor,
+                               vae: IDCVAE,
+                               out_path: str) -> tf.Tensor:
     plt.figure(figsize=((num_classes+1)//2, 2))
 
     zs, _, _ = vae.encode(xs)
@@ -192,7 +203,7 @@ def find_representative_points(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE) -> tf.
         plt.subplot(2, (num_classes + 1)//2, i + 1)
         plot_single_image(x[0])
 
-    plt.savefig(os.path.join(OUT_DIR, f"idcvae_representative_points.png"))
+    plt.savefig(out_path)
     return tf.concat(representative, axis=0)
 
 
@@ -211,7 +222,7 @@ def generate_morphing_images(x: tf.Tensor,
     assert n > 0
 
     def get_image_save_path(i):
-        return os.path.join(OUT_DIR, out_dir, f"{i:03}.png")
+        return os.path.join(out_dir, f"{i:03}.png")
 
     if not os.path.exists(os.path.dirname(get_image_save_path(0))):
         os.makedirs(os.path.dirname(get_image_save_path(0)))
