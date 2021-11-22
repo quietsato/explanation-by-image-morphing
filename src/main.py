@@ -56,7 +56,7 @@ def main():
     representative = find_representative_points(train_images, train_labels, vae)
 
     print("==> Classify images using IDCVAE")
-    test_pred = classify_using(test_images, vae)
+    test_pred = classify(test_images, vae)
     acc = count_successfully_classified(test_pred, test_labels).numpy()
     print(f"Test Accuracy: {acc}/{len(test_labels)}")
 
@@ -160,7 +160,7 @@ def decode_image_for_every_label(
 #
 # Image classification using IDCVAE
 #
-def classify_using(xs: tf.Tensor, vae: IDCVAE):
+def classify(xs: tf.Tensor, vae: IDCVAE):
     dataset = tf.data.Dataset.from_tensor_slices(xs).batch(1024)
     pred = []
     for xs in dataset:
