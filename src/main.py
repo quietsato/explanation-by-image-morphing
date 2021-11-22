@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
 tf.random.set_seed(42)
 
-
+IDCVAE_LATENT_DIM = 16
 WEIGHT_FILEPATH = os.path.join(
     os.path.dirname(__file__),
     "..",
@@ -34,7 +34,7 @@ def main():
     test_images = preprocess_image(test_images)
 
     print("==> Setup model")
-    vae = IDCVAE()
+    vae = IDCVAE(IDCVAE_LATENT_DIM)
     vae.compile()
 
     if WEIGHT_FILEPATH is not None:
