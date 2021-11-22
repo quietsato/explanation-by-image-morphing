@@ -51,6 +51,9 @@ def main():
         vae,
         "idcvae_decode_with_every_label_test00000")
 
+    print("==> Find representative points")
+    representative = find_representative_points(test_images, test_labels, vae)
+
     print("==> Classify images using IDCVAE")
     test_pred = classify_using(test_images, vae)
     acc = count_successfully_classified(test_pred, test_labels).numpy()
@@ -60,9 +63,6 @@ def main():
                                                 tf.not_equal(test_pred, test_labels))
     test_pred_misclassified = tf.boolean_mask(test_pred,
                                               tf.not_equal(test_pred, test_labels))
-
-    print("==> Find representing points")
-    representative = find_representative_points(test_images, test_pred, vae)
 
     print("==> Create morphing images")
 
