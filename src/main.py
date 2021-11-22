@@ -30,7 +30,8 @@ OUT_DIR = create_out_dir(f"main/{get_time_str()}")
 
 def main():
     print("==> Setup dataset")
-    _, (test_images, test_labels) = datasets.mnist.load_data()
+    (train_images, train_labels), (test_images, test_labels) = datasets.mnist.load_data()
+    train_images = preprocess_image(train_images)
     test_images = preprocess_image(test_images)
 
     print("==> Setup model")
@@ -52,7 +53,7 @@ def main():
         "idcvae_decode_with_every_label_test00000")
 
     print("==> Find representative points")
-    representative = find_representative_points(test_images, test_labels, vae)
+    representative = find_representative_points(train_images, train_labels, vae)
 
     print("==> Classify images using IDCVAE")
     test_pred = classify_using(test_images, vae)
