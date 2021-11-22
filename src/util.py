@@ -1,5 +1,6 @@
 import numpy as np
 from datetime import datetime, timezone, timedelta
+from tensorflow.keras import Model
 
 from config import *
 
@@ -13,6 +14,11 @@ def preprocess_image(image: np.ndarray):
     image = image / 255.
     image = image.reshape(-1, image_size, image_size, image_channels)
     return image
+
+
+def save_model_summary(model: Model, output_path: str):
+    with open(output_path, "w+") as f:
+        model.summary(print_fn=lambda s: f.write(s + "\n"))
 
 
 def create_out_dir(name: str) -> str:
