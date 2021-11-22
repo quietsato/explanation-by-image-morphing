@@ -12,7 +12,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.dirname(__file__))
 
     from config import *
-    from util import create_out_dir, get_time_str, preprocess_image
+    from util import create_out_dir, get_time_str, preprocess_image, save_model_summary
     from models import IDCVAE, reconstruction_loss
 
 tf.random.set_seed(42)
@@ -36,6 +36,8 @@ def main():
     print("==> Setup model")
     vae = IDCVAE(IDCVAE_LATENT_DIM)
     vae.compile()
+
+    save_idcvae_summary(vae, OUT_DIR)
 
     if WEIGHT_FILEPATH is not None:
         vae.load_weights(WEIGHT_FILEPATH)
@@ -112,6 +114,17 @@ def encode_decode_images(xs: tf.Tensor, ys: tf.Tensor, vae: IDCVAE):
         plt.axis('off')
 
     plt.savefig(os.path.join(OUT_DIR, "encode_decode.png"))
+
+
+def save_idcvae_summary(vae: IDCVAE, out_dir: str):
+    save_model_summary(
+        vae.E,
+        os.path.join(out_dir, "idcvae_encoder_summary.txt")
+    )
+    save_model_summary(
+        vae.D,
+        os.path.join(out_dir, "idcvae_decoder_summary.txt")
+    )
 
 
 def decode_image_for_every_label(
