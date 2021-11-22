@@ -43,15 +43,6 @@ def main():
     if WEIGHT_FILEPATH is not None:
         vae.load_weights(WEIGHT_FILEPATH)
 
-    # IDCVAE Test
-    print("==> IDCVAE Test")
-    encode_decode_images(test_images[:10], test_labels[:10], vae)
-    decode_image_for_every_label(
-        test_images[0],
-        test_labels[0],
-        vae,
-        "idcvae_decode_with_every_label_test00000")
-
     print("==> Find representative points")
     representative = find_representative_points(train_images, train_labels, vae)
 
