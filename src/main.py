@@ -107,7 +107,7 @@ def encode_decode_images(xs: tf.Tensor,
                          vae: IDCVAE,
                          out_path: str):
     n = min(len(xs), len(ys))
-    zs, _, _ = vae.encode(xs)
+    _, zs, _ = vae.encode(xs)
     rec_xs = vae.decode(zs, ys)
     plt.figure(figsize=(2, n))
     for i in range(n):
@@ -142,7 +142,7 @@ def decode_image_for_every_label(
     decode_cols = (num_classes+1)//2
     figure_cols = 1 + decode_cols
 
-    z, _, _ = vae.encode(tf.expand_dims(x, 0))
+    _, z, _ = vae.encode(tf.expand_dims(x, 0))
     zs = tf.tile(z, [num_classes, 1])
     rec_xs = vae.decode(zs, tf.range(num_classes))
 
@@ -170,7 +170,7 @@ def classify(xs: tf.Tensor, vae: IDCVAE):
     dataset = tf.data.Dataset.from_tensor_slices(xs).batch(1024)
     pred = []
     for xs in dataset:
-        zs, _, _ = vae.encode(xs)
+        _, zs, _ = vae.encode(xs)
         loss_batch = []
         for y in range(num_classes):
             ys = tf.tile(tf.constant([y], tf.int32), [len(zs)])
@@ -192,7 +192,7 @@ def find_representative_points(xs: tf.Tensor,
                                out_path: str) -> tf.Tensor:
     plt.figure(figsize=((num_classes+1)//2, 2))
 
-    zs, _, _ = vae.encode(xs)
+    _, zs, _ = vae.encode(xs)
     representative = []
     for i in range(num_classes):
         zs_i = tf.boolean_mask(zs, tf.equal(ys, i))
@@ -230,7 +230,7 @@ def generate_morphing_images(x: tf.Tensor,
     plot_single_image(x)
     plt.savefig(get_image_save_path(0))
 
-    z, _, _ = vae.encode(tf.expand_dims(x, axis=0))
+    _, z, _ = vae.encode(tf.expand_dims(x, axis=0))
     diff = representative[y:y+1] - z
 
     for i in range(n):
