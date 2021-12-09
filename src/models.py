@@ -68,10 +68,12 @@ class Sampling(layers.Layer):
 
 def build_encoder(latent_dim: int) -> Model:
     input = Input((image_size, image_size, image_channels))
-    x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(input)
-    x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
+    x = layers.Conv2D(32, 4, strides=2, padding="same")(input)
+    x = layers.LeakyReLU(0.01)(x)
+    x = layers.Conv2D(64, 4, strides=2, padding="same")(x)
+    x = layers.LeakyReLU(0.01)(x)
     x = layers.Flatten()(x)
-    x = layers.Dense(16, activation="relu")(x)
+    x = layers.Dense(64, activation="relu")(x)
     z_mean = layers.Dense(latent_dim, name="z_mean")(x)
     z_log_var = layers.Dense(latent_dim, name="z_log_var")(x)
     z = Sampling()([z_mean, z_log_var])
@@ -83,9 +85,11 @@ def build_decoder(latent_dim: int) -> Model:
         layers.InputLayer((latent_dim + num_classes, )),
         layers.Dense(7 * 7 * 64),
         layers.Reshape((7, 7, 64)),
-        layers.Conv2DTranspose(64, 3, strides=2, padding='same', activation='relu'),
-        layers.Conv2DTranspose(32, 3, strides=2, padding='same', activation='relu'),
-        layers.Conv2DTranspose(1, 3, strides=1, padding='same', activation='sigmoid')
+        layers.Conv2DTranspose(64, 4, strides=2, padding='same'),
+        layers.LeakyReLU(0.01),
+        layers.Conv2DTranspose(32, 4, strides=2, padding='same'),
+        layers.LeakyReLU(0.01),
+        layers.Conv2DTranspose(1, 4, strides=1, padding='same', activation='sigmoid')
     ], name="D")
 
 
