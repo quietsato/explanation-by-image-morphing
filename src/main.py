@@ -102,27 +102,6 @@ def main():
         )
 
 
-def encode_decode_images(xs: tf.Tensor,
-                         ys: tf.Tensor,
-                         vae: IDCVAE,
-                         out_path: str):
-    n = min(len(xs), len(ys))
-    _, zs, _ = vae.encode(xs)
-    rec_xs = vae.decode(zs, ys)
-    plt.figure(figsize=(2, n))
-    for i in range(n):
-        plt.subplot(n, 2, 2*i+1)
-        plt.imshow(xs[i, :, :, 0], cmap='gray')
-        plt.title(ys[i])
-        plt.axis('off')
-
-        plt.subplot(n, 2, 2*i+2)
-        plt.imshow(rec_xs[i, :, :, 0], cmap='gray')
-        plt.axis('off')
-
-    plt.savefig(out_path)
-
-
 def save_idcvae_summary(vae: IDCVAE, out_dir: str):
     save_model_summary(
         vae.E,
