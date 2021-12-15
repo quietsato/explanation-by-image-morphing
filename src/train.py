@@ -11,6 +11,7 @@ if __name__ == "__main__":
     from util import get_time_str, preprocess_image, create_out_dir
 
 
+os.environ['TF_DETERMINISTIC_OPS'] = '1'
 tf.random.set_seed(42)
 
 epochs = 3
@@ -24,14 +25,8 @@ def main():
     OUT_DIR = create_out_dir(f"train/{time_str}")
     CHECKPOINT_DIR = create_out_dir(f"train/{time_str}/checkpoints")
 
-    (dataset_images, dataset_labels), _ = datasets.mnist.load_data()
-    dataset_images = preprocess_image(dataset_images)
-
-    train_len = len(dataset_images) // 10 * 9
-    train_images, valid_images = dataset_images[:train_len], dataset_images[train_len:]
-    train_labels, valid_labels = dataset_labels[:train_len], dataset_labels[train_len:]
-    assert len(train_images) + len(valid_labels) == len(dataset_images)
-    assert len(train_labels) + len(valid_labels) == len(dataset_labels)
+    (train_images, train_labels), _ = datasets.mnist.load_data()
+    train_images = preprocess_image(train_images)
 
     VAE = IDCVAE(latent_dim=16)
     VAE.compile(
@@ -63,7 +58,7 @@ def main():
     VAE.fit(
         train_images,
         train_labels,
-        validation_data=(valid_images, valid_labels),
+        validation_split=.1,
         batch_size=batch_size,
         epochs=epochs,
         shuffle=True,
