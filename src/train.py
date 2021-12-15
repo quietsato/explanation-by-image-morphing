@@ -25,8 +25,14 @@ def main():
     OUT_DIR = create_out_dir(f"train/{time_str}")
     CHECKPOINT_DIR = create_out_dir(f"train/{time_str}/checkpoints")
 
-    (train_images, train_labels), _ = datasets.mnist.load_data()
-    train_images = preprocess_image(train_images)
+    (dataset_images, dataset_labels), _ = datasets.mnist.load_data()
+    dataset_images = preprocess_image(dataset_images)
+
+    train_len = len(dataset_images) // 10 * 9
+    train_images, valid_images = dataset_images[:train_len], dataset_images[train_len:]
+    train_labels, valid_labels = dataset_labels[:train_len], dataset_labels[train_len:]
+    assert len(train_images) + len(valid_labels) == len(dataset_images)
+    assert len(train_labels) + len(valid_labels) == len(dataset_labels)
 
     VAE = IDCVAE(latent_dim=16)
     VAE.compile(
