@@ -56,6 +56,24 @@ class IDCVAE(Model):
             "kl_loss": self.kl_loss_tracker.result(),
         }
 
+    def test_step(self, data):
+        x, y = data
+
+        z, z_mean, z_log_var = self.encode(x)
+        rec = self.decode(z, y)
+        rec_loss = reconstruction_loss(x, rec)
+        kl_loss = KL_loss(z_mean, z_log_var)
+        total_loss = rec_loss + kl_loss
+
+        self.total_loss_tracker.update_state(total_loss)
+        self.rec_loss_tracker.update_state(rec_loss)
+        self.kl_loss_tracker.update_state(kl_loss)
+
+        return {
+            "loss": self.total_loss_tracker.result(),
+            "reconstruction_loss": self.rec_loss_tracker.result(),
+            "kl_loss": self.kl_loss_tracker.result(),
+        }
 
 class Sampling(layers.Layer):
     def call(self, inputs):
