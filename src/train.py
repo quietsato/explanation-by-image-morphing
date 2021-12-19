@@ -27,8 +27,8 @@ def main():
     (train_images, train_labels), _ = datasets.mnist.load_data()
     train_images = preprocess_image(train_images)
 
-    VAE = IDCVAE(latent_dim=16)
-    VAE.compile(
+    model = IDCVAE(latent_dim=16)
+    model.compile(
         optimizer=optimizers.Adam(learning_rate=1e-4)
     )
 
@@ -46,7 +46,7 @@ def main():
     #
     # Train
     #
-    VAE.fit(
+    model.fit(
         train_images,
         train_labels,
         validation_split=.1,
