@@ -49,7 +49,6 @@ def main():
     vae = IDCVAE(IDCVAE_LATENT_DIM)
     vae.compile()
 
-    save_idcvae_summary(vae, OUT_DIR)
 
     if WEIGHT_FILEPATH is not None:
         vae.load_weights(WEIGHT_FILEPATH)
@@ -108,17 +107,6 @@ def main():
             vae,
             os.path.join(TEST_MISCLASSIFIED_MORPH_OUT_DIR, f"{i:05}", "decode_for_every_label.png")
         )
-
-
-def save_idcvae_summary(vae: IDCVAE, out_dir: str):
-    save_model_summary(
-        vae.E,
-        os.path.join(out_dir, "idcvae_encoder_summary.txt")
-    )
-    save_model_summary(
-        vae.D,
-        os.path.join(out_dir, "idcvae_decoder_summary.txt")
-    )
 
 
 def decode_image_for_every_label(
