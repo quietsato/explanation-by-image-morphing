@@ -23,7 +23,6 @@ verbose = 2
 def main():
     time_str = get_time_str()
     OUT_DIR = create_out_dir(f"train/{time_str}")
-    CHECKPOINT_DIR = create_out_dir(f"train/{time_str}/checkpoints")
 
     (train_images, train_labels), _ = datasets.mnist.load_data()
     train_images = preprocess_image(train_images)
@@ -43,14 +42,6 @@ def main():
         monitor='val_loss',
         patience=5
     )
-    model_checkpoint = callbacks.ModelCheckpoint(
-        os.path.join(
-            CHECKPOINT_DIR,
-            "{epoch:03d}.h5" # 1 based indexing epochs
-        ),
-        monitor='val_loss',
-        save_weights_only=True,
-    )
 
     #
     # Train
@@ -62,7 +53,7 @@ def main():
         batch_size=batch_size,
         epochs=epochs,
         shuffle=True,
-        callbacks=[csv_logger, early_stopping, model_checkpoint],
+        callbacks=[csv_logger, early_stopping],
         verbose=verbose
     )
 
