@@ -4,8 +4,7 @@ from tensorflow.keras import datasets
 import matplotlib.pyplot as plt
 import os
 
-from dotenv import load_dotenv
-load_dotenv()
+import argparse
 
 if __name__ == "__main__":
     import sys
@@ -18,13 +17,6 @@ if __name__ == "__main__":
 tf.random.set_seed(42)
 
 IDCVAE_LATENT_DIM = 16
-WEIGHT_FILEPATH = os.path.join(
-    os.path.dirname(__file__),
-    "..",
-    os.getenv(
-        "IDCVAE_WEIGHT_RELATIVE_PATH", "./IDCVAE.h5"
-    ),
-)
 time_str = get_time_str()
 OUT_DIR = create_out_dir(f"main/{time_str}")
 TEST_IMAGE_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test_image")
@@ -32,6 +24,22 @@ TEST_MISCLASSIFIED_MORPH_OUT_DIR = create_out_dir(f"main/{time_str}/test_misclas
 
 
 def main():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument(
+        "model_weight_dir",
+        metavar="MODEL_WEIGHT_DIR",
+        type=str
+    )
+    arg_parser.add_argument(
+        "-n",
+        type=int,
+        default=10,
+        help="Number of morphing images to generate"
+    )
+    args = arg_parser.parse_args()
+
+    WEIGHT_FILEPATH = args.model_weight_dir
+
     print("==> Setup dataset")
     (train_images, train_labels), (test_images, test_labels) = datasets.mnist.load_data()
     train_images = preprocess_image(train_images)
