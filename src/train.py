@@ -36,7 +36,7 @@ def main():
     # Callbacks
     #
     csv_logger = callbacks.CSVLogger(
-        os.path.join(OUT_DIR, "log.csv") # 0 based indexing epochs
+        os.path.join(OUT_DIR, "log.csv")  # 0 based indexing epochs
     )
     early_stopping = callbacks.EarlyStopping(
         monitor='val_loss',
