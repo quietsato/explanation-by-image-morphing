@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 import tensorflow as tf
 from tensorflow.keras import layers, metrics, losses, Model, Input, Sequential
 
@@ -74,6 +74,37 @@ class IDCVAE(Model):
             "reconstruction_loss": self.rec_loss_tracker.result(),
             "kl_loss": self.kl_loss_tracker.result(),
         }
+
+    def predict_step(self, xs):
+        _, zs, _ = self.encode(xs)
+        loss_batch = []
+        for y in range(num_classes):
+            ys = tf.repeat([y], repeats=[tf.shape(zs)[0]], axis=0)
+            xs_rec = self.decode(zs, ys)
+            loss = reconstruction_loss(xs, xs_rec, foreach=True)
+            loss_batch.append(loss)
+        ys = tf.argmin(tf.transpose(tf.convert_to_tensor(loss_batch)), axis=1)
+        return ys
+
+    def find_representative_points(self, xs, ys) -> tf.Tensor:
+        _, zs, _ = self.encode(xs)
+        representative = []
+        for l in range(num_classes):
+            zs_l = tf.boolean_mask(zs, tf.equal(ys, l))
+            z_l = tf.reduce_mean(zs_l, axis=0, keepdims=True)
+            representative.append(z_l)
+        return tf.concat(representative, axis=0)
+
+    def generate_morphing(self, x, y, representative, n) -> List[tf.Tensor]:
+        assert n > 0
+        _, z, _ = self.encode(tf.expand_dims(x, 0))
+        diff = tf.gather(representative, y) - z
+        result = []
+        for _ in range(n):
+            z = z + diff / n
+            x_dec = self.decode(z, tf.expand_dims(y, 0))[0]
+            result.append(x_dec)
+        return result
 
 class Sampling(layers.Layer):
     def call(self, inputs):
