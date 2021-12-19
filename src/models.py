@@ -9,8 +9,8 @@ class IDCVAE(Model):
     def __init__(self, latent_dim=16, *args, **kwargs):
         super(IDCVAE, self).__init__(*args, **kwargs)
 
-        self.E = build_encoder(latent_dim)
-        self.D = build_decoder(latent_dim)
+        self.encoder = build_encoder(latent_dim)
+        self.decoder = build_decoder(latent_dim)
 
         self.total_loss_tracker = metrics.Mean(name="total_loss")
         self.rec_loss_tracker = metrics.Mean(name="reconstruction_loss")
@@ -27,12 +27,12 @@ class IDCVAE(Model):
         ]
 
     def encode(self, x) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-        return self.E(x)
+        return self.encoder(x)
 
     def decode(self, z, y) -> tf.Tensor:
         y_onehot = tf.one_hot(y, num_classes)
-        D_input = tf.concat([z, y_onehot], axis=1)
-        return self.D(D_input)
+        decoder_input = tf.concat([z, y_onehot], axis=1)
+        return self.decoder(decoder_input)
 
     def train_step(self, data):
         x, y = data
