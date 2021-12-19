@@ -138,17 +138,17 @@ def generate_morphing_images(x, y, representative, model: IDCVAE, n: int, out_di
     plt.figure(figsize=(1, 1))
     plot_single_image(x)
     plt.tight_layout()
-    plt.savefig(get_image_save_path(0), bbox_inches='tight', pad_inches=0)
+    plt.savefig(os.path.join(out_dir, "original.png"), bbox_inches='tight', pad_inches=0)
     plt.clf()
 
     xs = model.generate_morphing(x, y, representative, n)
 
-    for i in range(n):
+    for i in range(n + 1):
         plt.clf()
         plt.figure(figsize=(1, 1))
         plot_single_image(xs[i])
         plt.tight_layout()
-        plt.savefig(get_image_save_path(i+1), bbox_inches='tight', pad_inches=0)
+        plt.savefig(get_image_save_path(i), bbox_inches='tight', pad_inches=0)
         plt.clf()
 
 

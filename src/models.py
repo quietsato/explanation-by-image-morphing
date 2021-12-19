@@ -100,10 +100,10 @@ class IDCVAE(Model):
         _, z, _ = self.encode(tf.expand_dims(x, 0))
         diff = tf.gather(representative, y) - z
         result = []
-        for _ in range(n):
-            z = z + diff / n
+        for _ in range(n + 1):
             x_dec = self.decode(z, tf.expand_dims(y, 0))[0]
             result.append(x_dec)
+            z = z + diff / n
         return result
 
 class Sampling(layers.Layer):
