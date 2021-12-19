@@ -57,6 +57,12 @@ def main():
         verbose=verbose
     )
 
+    #
+    # Save Models
+    #
+    model.encoder.save(os.path.join(OUT_DIR, "model_encoder.h5"))
+    model.decoder.save(os.path.join(OUT_DIR, "model_decoder.h5"))
+
 
 if __name__ == "__main__":
     main()
