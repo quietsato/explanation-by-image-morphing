@@ -12,11 +12,15 @@
 python3 ./src/train.py
 ```
 
+This script outputs logs and trained models to `out/train/[exec_start_time]`.
+
 ## Test a Model
 
+```shell
+python3 ./src/main.py path/to/train_log
 ```
-python3 ./src/main.py 
-```
+
+This script outputs explanation images to `out/main/[exec_start_time]`.
 
 ## References
 
