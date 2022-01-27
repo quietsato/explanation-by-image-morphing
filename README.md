@@ -1,6 +1,10 @@
 # An Image Classification Model Featuring Explainability by Image Morphing
 
+![An example of explanation](docs/fig-explanation-example.png)
 
+## Method
+
+![The process of generating an explanation](docs/fig-algorithm.png)
 
 ## Train a Model
 
