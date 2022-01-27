@@ -17,7 +17,6 @@ if __name__ == "__main__":
 
 tf.random.set_seed(42)
 
-IDCVAE_LATENT_DIM = 16
 time_str = get_time_str()
 OUT_DIR = create_out_dir(f"main/{time_str}")
 TEST_IMAGE_OUT_DIR = create_out_dir(f"main/{time_str}/test_image")
@@ -47,7 +46,7 @@ def main():
     test_images = preprocess_image(test_images)
 
     print("==> Setup model")
-    model = IDCVAE(IDCVAE_LATENT_DIM)
+    model = IDCVAE()
     model.compile()
 
     if WEIGHT_FILEPATH is not None:

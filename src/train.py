@@ -14,10 +14,10 @@ if __name__ == "__main__":
 os.environ['TF_DETERMINISTIC_OPS'] = '1'
 tf.random.set_seed(42)
 
-epochs = 3
+epochs = 300
 batch_size = 128
 
-verbose = 2
+verbose = 1
 
 
 def main():
@@ -27,7 +27,7 @@ def main():
     (train_images, train_labels), _ = datasets.mnist.load_data()
     train_images = preprocess_image(train_images)
 
-    model = IDCVAE(latent_dim=16)
+    model = IDCVAE()
     model.compile(
         optimizer=optimizers.Adam(learning_rate=1e-4)
     )
