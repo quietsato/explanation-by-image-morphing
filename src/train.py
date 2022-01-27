@@ -14,10 +14,10 @@ if __name__ == "__main__":
 os.environ['TF_DETERMINISTIC_OPS'] = '1'
 tf.random.set_seed(42)
 
-epochs = 3
+epochs = 300
 batch_size = 128
 
-verbose = 2
+verbose = 1
 
 
 def main():
