@@ -1,62 +1,27 @@
-# Explain MNIST Classification Using ID-CVAE
+# An Image Classification Model Featuring Explainability by Image Morphing
 
-卒研実装コード
+![An example of explanation](docs/fig-explanation-example.png)
 
-## Training
+## Method
 
-### Command
+![The process of generating an explanation](docs/fig-algorithm.png)
+
+## Train a Model
 
 ```shell
 python3 ./src/train.py
 ```
 
-### Outputs
+This script outputs logs and trained models to `out/train/[exec_start_time]`.
 
-```
-./out/
-└── train
-    └── 2021-11-22-09-29-57
-        ├── checkpoints
-        │   └── 001.h5
-        └── log.csv
+## Test a Model
+
+```shell
+python3 ./src/main.py path/to/train_log
 ```
 
-## Generate figures
-
-### Command
-
-```
-python3 ./src/main.py
-```
-
-### Outputs
-
-```
-./out/
-└── main
-    └── 2021-11-22-14-16-36
-        ├── idcvae_decoder_summary.txt
-        ├── idcvae_encoder_summary.txt
-        ├── representative_points.png
-        ├── test_image
-        │   ├── 00000
-        │   │   ├── 000.png
-        │   │   ├── ...
-        │   │   ├── 010.png
-        │   │   └── decode_for_every_label.png
-        │   ├── 00001
-        │   ├── 00002
-        │   └── ...
-        └── test_misclassified
-            ├── 00000
-            │   ├── 000.png
-            │   ├── ...
-            │   ├── 010.png
-            │   └── decode_for_every_label.png
-            ├── 00001
-            ├── 00002
-            └── ...
-```
-
+This script outputs explanation images to `out/main/[exec_start_time]`.
 
 ## References
+
+- Lopez-Martin M, Carro B, Sanchez-Esguevillas A, Lloret J. Conditional Variational Autoencoder for Prediction and Feature Recovery Applied to Intrusion Detection in IoT. Sensors. 2017; 17(9):1967. https://doi.org/10.3390/s17091967
